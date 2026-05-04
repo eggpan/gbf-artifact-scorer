@@ -1,0 +1,42 @@
+name: 問題を報告
+description: 拡張機能について気づいた問題を報告します
+title: "[報告] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ご報告ありがとうございます。分かる範囲で入力してください。
+        スクリーンショットやログには、プレイヤー名や認証情報などを含めないでください。
+
+  - type: textarea
+    id: report
+    attributes:
+      label: 報告内容
+      description: 起きたことや気づいたことを記載してください。
+      placeholder: 例：アーティファクト一覧にスコアが表示されません。
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現方法・確認手順
+      description: 再現方法や確認した手順が分かる場合は記載してください。
+      placeholder: |
+        例：
+        1. アーティファクト一覧を開く
+        2. 一覧を2ページ目へ切り替える
+        3. スコアが表示されない
+
+  - type: input
+    id: environment
+    attributes:
+      label: 利用環境
+      description: Chrome、OS、拡張機能のバージョンなどを分かる範囲で記載してください。
+      placeholder: 例：Chrome 140、Windows 11、拡張機能 1.0.1
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 補足・スクリーンショット
+      description: 補足情報、スクリーンショット、コンソールログなどがあれば追加してください。

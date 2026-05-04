@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GBF Artifact Scorer 設定</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <header class="page-header">
+      <div>
+        <h1>GBF Artifact Scorer</h1>
+        <p class="description">
+          自分の基準で採点ルールを作り、設定画面の一覧プレビューで重要度を確認できます。設定はこのブラウザに自動保存されます。
+        </p>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel" aria-labelledby="artifact-display-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="artifact-display-title">アーティファクト採点結果</h2>
+            <p>
+              ゲーム内の一覧を開くと、最大20件のスコアを同じ並び順で表示します。
+            </p>
+          </div>
+          <span id="artifact-display-count" class="count-badge">0件</span>
+        </div>
+        <div class="artifact-display-meta" aria-live="polite">
+          <p id="artifact-display-status">
+            ゲーム内でアーティファクト一覧を開いてください。
+          </p>
+          <p id="artifact-display-selection"
+            class="artifact-display-selection"></p>
+        </div>
+        <div class="artifact-display-content">
+          <div>
+            <div
+              id="artifact-display-grid"
+              class="artifact-display-grid"
+              role="list"
+              aria-label="アーティファクトの採点結果"
+            ></div>
+          </div>
+          <aside
+            class="artifact-display-details"
+            aria-labelledby="artifact-display-details-title"
+          >
+            <div class="artifact-display-details-heading">
+              <div>
+                <h3 id="artifact-display-details-title">選択中の内訳</h3>
+                <p id="artifact-display-details-position">未選択</p>
+              </div>
+              <strong id="artifact-display-details-total">—</strong>
+            </div>
+            <p id="artifact-display-details-empty" class="empty-detail">
+              ゲーム画面でアーティファクトを選択してください。
+            </p>
+            <ul id="artifact-display-details-list"></ul>
+          </aside>
+        </div>
+      </section>
+
+      <section
+        id="rule-panel"
+        class="panel"
+        aria-labelledby="rule-form-title"
+        hidden
+      >
+        <div class="section-heading">
+          <div>
+            <div class="title-row">
+              <h2 id="rule-form-title">採点ルールを追加</h2>
+              <span id="edit-indicator" class="editing-badge"
+                hidden>編集中</span>
+            </div>
+            <p id="rule-form-description">
+              条件を指定しない項目は「全て」に適用されます。同じ条件を追加すると、既存の採点ルールを上書きします。
+            </p>
+          </div>
+        </div>
+
+        <form id="rule-form">
+          <div class="form-grid">
+            <label>
+              <span>グループ</span>
+              <select id="group-select">
+                <option value="">全て</option>
+                <option value="1">グループⅠ</option>
+                <option value="2">グループⅡ</option>
+                <option value="3">グループⅢ</option>
+              </select>
+            </label>
+
+            <label class="effect-field">
+              <span>効果</span>
+              <select id="effect-select" required></select>
+            </label>
+
+            <label>
+              <span>クオリティ</span>
+              <select id="quality-select"></select>
+            </label>
+
+            <label>
+              <span>スコア</span>
+              <input
+                id="score-input"
+                type="number"
+                step="any"
+                placeholder="0以外"
+                required
+              />
+            </label>
+          </div>
+
+          <div class="scope-grid">
+            <fieldset class="scope-field">
+              <legend>属性</legend>
+              <div id="attribute-options" class="scope-options"></div>
+            </fieldset>
+
+            <fieldset class="scope-field">
+              <legend>武器種</legend>
+              <div id="weapon-type-options" class="scope-options"></div>
+            </fieldset>
+          </div>
+
+          <label class="comment-field">
+            <span>コメント（任意）</span>
+            <input
+              id="comment-input"
+              type="text"
+              maxlength="500"
+              placeholder="例：火属性・剣得意のキャラクター向け"
+            />
+          </label>
+
+          <div class="form-actions">
+            <button id="submit-rule" class="primary-button" type="submit">
+              追加する
+            </button>
+            <button id="cancel-edit" class="secondary-button" type="button"
+              hidden>
+              編集をやめる
+            </button>
+          </div>
+          <p
+            id="rule-form-message"
+            class="rule-form-message"
+            role="alert"
+            aria-live="assertive"
+            hidden
+          ></p>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="rules-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="rules-title">採点ルール</h2>
+            <p>
+              効果ごとに、指定項目が多く対象範囲が狭い設定を1件だけ適用します。スコア欄は直接変更できます。
+            </p>
+          </div>
+          <div class="rules-tools">
+            <label class="rule-search-field">
+              <span class="visually-hidden">採点ルールを検索</span>
+              <input
+                id="rule-search"
+                type="search"
+                placeholder="効果・コメントを検索"
+              />
+            </label>
+            <span id="rule-count" class="count-badge">0件</span>
+            <button
+              id="toggle-rule-form"
+              class="primary-button rules-add-button"
+              type="button"
+              aria-controls="rule-panel"
+              aria-expanded="false"
+            >
+              ＋ 採点ルールを追加
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <colgroup>
+              <col class="group-column" />
+              <col class="effect-column" />
+              <col class="conditions-column" />
+              <col class="score-column" />
+              <col class="actions-column" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>グループ</th>
+                <th>効果</th>
+                <th>条件・コメント</th>
+                <th>スコア</th>
+                <th><span class="visually-hidden">操作</span></th>
+              </tr>
+            </thead>
+            <tbody id="rules-body"></tbody>
+          </table>
+          <p id="empty-rules" class="empty-state">
+            採点ルールはまだありません。「採点ルールを追加」から登録してください。
+          </p>
+        </div>
+      </section>
+
+      <section
+        id="combination-panel"
+        class="panel"
+        aria-labelledby="combination-form-title"
+        hidden
+      >
+        <div class="section-heading">
+          <div>
+            <div class="title-row">
+              <h2 id="combination-form-title">組み合わせボーナスを追加</h2>
+              <span id="combination-edit-indicator" class="editing-badge"
+                hidden>編集中</span>
+            </div>
+            <p id="combination-form-description">
+              2つの効果と、それぞれのクオリティを指定します。同じ条件を追加すると既存ボーナスを上書きします。
+            </p>
+          </div>
+        </div>
+
+        <form id="combination-form">
+          <div class="combination-form-grid">
+            <label class="combination-effect-field">
+              <span>効果1</span>
+              <select id="combination-effect-1" required></select>
+            </label>
+            <label>
+              <span>クオリティ1</span>
+              <select id="combination-quality-1"></select>
+            </label>
+            <label class="combination-effect-field">
+              <span>効果2</span>
+              <select id="combination-effect-2" required></select>
+            </label>
+            <label>
+              <span>クオリティ2</span>
+              <select id="combination-quality-2"></select>
+            </label>
+            <label class="combination-score-field">
+              <span>加算スコア</span>
+              <input
+                id="combination-score"
+                type="number"
+                step="any"
+                placeholder="0以外"
+                required
+              />
+            </label>
+          </div>
+
+          <div class="scope-grid">
+            <fieldset class="scope-field">
+              <legend>属性（共通条件）</legend>
+              <div id="combination-attribute-options"
+                class="scope-options"></div>
+            </fieldset>
+
+            <fieldset class="scope-field">
+              <legend>武器種（共通条件）</legend>
+              <div id="combination-weapon-type-options"
+                class="scope-options"></div>
+            </fieldset>
+          </div>
+
+          <label class="comment-field">
+            <span>コメント（任意）</span>
+            <input
+              id="combination-comment"
+              type="text"
+              maxlength="500"
+              placeholder="例：回復向けの組み合わせ"
+            />
+          </label>
+
+          <div class="form-actions">
+            <button
+              id="submit-combination"
+              class="primary-button"
+              type="submit"
+            >
+              追加する
+            </button>
+            <button
+              id="cancel-combination-edit"
+              class="secondary-button"
+              type="button"
+              hidden
+            >
+              編集をやめる
+            </button>
+          </div>
+          <p
+            id="combination-form-message"
+            class="rule-form-message"
+            role="alert"
+            aria-live="assertive"
+            hidden
+          ></p>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="combination-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="combination-title">組み合わせボーナス</h2>
+            <p>
+              一致した組み合わせボーナスは、各効果のスコアへすべて加算します。
+            </p>
+          </div>
+          <div class="rules-tools">
+            <span id="combination-count" class="count-badge">0件</span>
+            <button
+              id="toggle-combination-form"
+              class="primary-button rules-add-button"
+              type="button"
+              aria-controls="combination-panel"
+              aria-expanded="false"
+            >
+              ＋ ボーナスを追加
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <colgroup>
+              <col class="combination-effects-column" />
+              <col class="conditions-column" />
+              <col class="score-column" />
+              <col class="actions-column" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>効果の組み合わせ</th>
+                <th>共通条件・コメント</th>
+                <th>加算スコア</th>
+                <th><span class="visually-hidden">操作</span></th>
+              </tr>
+            </thead>
+            <tbody id="combination-body"></tbody>
+          </table>
+          <p id="empty-combinations" class="empty-state">
+            組み合わせボーナスはまだありません。「ボーナスを追加」から登録してください。
+          </p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="display-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="display-title">表示設定</h2>
+            <p>設定画面の一覧プレビューに表示するスコアを調整します。</p>
+          </div>
+        </div>
+        <div class="display-options">
+          <div class="score-highlight-option">
+            <label class="toggle-field">
+              <input id="enable-score-highlight" type="checkbox" />
+              <span>スコアを高・通常・低の3段階で強調表示する</span>
+            </label>
+            <div id="score-highlight-controls" class="score-highlight-controls"
+              hidden>
+              <div class="score-threshold-fields">
+                <label class="score-threshold-field">
+                  <span>高スコア</span>
+                  <span class="score-threshold-control">
+                    <input id="high-score-threshold" type="number" step="any"
+                      value="10" />
+                    <span>点以上</span>
+                  </span>
+                </label>
+                <label class="score-threshold-field">
+                  <span>低スコア</span>
+                  <span class="score-threshold-control">
+                    <input id="low-score-threshold" type="number" step="any"
+                      value="0" />
+                    <span>点以下</span>
+                  </span>
+                </label>
+              </div>
+              <div class="score-highlight-preview"
+                aria-label="3段階表示のプレビュー">
+                <span class="score-highlight-sample high">
+                  <span>高</span>
+                  <strong id="high-score-preview">10</strong>
+                </span>
+                <span class="score-highlight-sample normal">
+                  <span>通常</span>
+                  <strong id="normal-score-preview">5</strong>
+                </span>
+                <span class="score-highlight-sample low">
+                  <span>低</span>
+                  <strong id="low-score-preview">0</strong>
+                </span>
+              </div>
+              <p id="score-highlight-message" class="rule-form-message"
+                role="alert" hidden></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel compact-panel" aria-labelledby="favorite-title">
+        <div>
+          <h2 id="favorite-title">お気に入りの加算スコア</h2>
+          <p>お気に入りに登録されたアーティファクトへ1回加算します。</p>
+        </div>
+        <label class="fallback-field">
+          <input
+            id="favorite-bonus"
+            type="number"
+            step="any"
+            value="0"
+            aria-label="お気に入りの加算スコア"
+          />
+        </label>
+      </section>
+
+      <section class="panel compact-panel" aria-labelledby="fallback-title">
+        <div>
+          <h2 id="fallback-title">ルール未設定時のスコア</h2>
+          <p>採点ルールに一致しない効果へ適用します。</p>
+        </div>
+        <label class="fallback-field">
+          <input
+            id="unmatched-score"
+            type="number"
+            step="any"
+            value="0"
+            aria-label="ルール未設定時のスコア"
+          />
+        </label>
+      </section>
+
+      <section class="panel" aria-labelledby="data-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="data-title">設定データ</h2>
+            <p>JSONでの移行、標準設定への復元、採点ルールの全削除ができます。</p>
+          </div>
+        </div>
+        <div class="data-actions">
+          <button id="export-json" class="secondary-button" type="button">
+            JSONを書き出す
+          </button>
+          <label class="secondary-button file-button">
+            JSONを読み込む
+            <input id="import-json" type="file" accept="application/json,.json" />
+          </label>
+          <button
+            id="reset-default-config"
+            class="secondary-button"
+            type="button"
+          >
+            標準設定に戻す
+          </button>
+          <button id="clear-score-rules" class="danger-button" type="button">
+            採点ルールを全て削除
+          </button>
+        </div>
+      </section>
+
+      <p id="status-message" class="status-message" role="status"
+        aria-live="polite"></p>
+    </main>
+
+    <script src="core/score-config-core.js"></script>
+    <script src="core/artifact-score-core.js"></script>
+    <script src="core/score-config-editor-core.js"></script>
+    <script src="core/artifact-list-core.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

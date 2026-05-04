@@ -1,0 +1,399 @@
+{
+  "version": 1,
+  "_note": "既知の効果一覧とゲーム内のグループ表から作成した暫定マスタです。",
+  "attributes": ["火", "水", "土", "風", "光", "闇"],
+  "weaponTypes": [
+    "剣",
+    "短剣",
+    "槍",
+    "斧",
+    "杖",
+    "銃",
+    "格闘",
+    "弓",
+    "楽器",
+    "刀"
+  ],
+  "effects": [
+    {
+      "name": "攻撃力",
+      "shortName": "攻撃",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "HP",
+      "shortName": "HP",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "クリティカル確率",
+      "shortName": "クリ",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "奥義ダメージ",
+      "shortName": "奥義ダメ",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "アビリティダメージ",
+      "shortName": "アビダメ",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "弱体成功率",
+      "shortName": "弱体成功",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "ダブルアタック確率",
+      "shortName": "DA",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "トリプルアタック確率",
+      "shortName": "TA",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "防御",
+      "shortName": "防御",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "弱体耐性",
+      "shortName": "弱体耐性",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "回避率",
+      "shortName": "回避",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "回復性能",
+      "shortName": "回復",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "自属性攻撃力",
+      "shortName": "属性攻撃",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "有利属性軽減",
+      "shortName": "有利軽減",
+      "skillGroup": 1,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+
+    {
+      "name": "通常攻撃ダメージ上限",
+      "shortName": "通常上限",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "アビリティダメージ上限",
+      "shortName": "アビ上限",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "奥義ダメージ上限",
+      "shortName": "奥義上限",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "通常攻撃の与ダメージ上昇",
+      "shortName": "通常与ダメ",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "アビリティ与ダメージ上昇",
+      "shortName": "アビ与ダメ",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "奥義与ダメージ上昇",
+      "shortName": "奥義与ダメ",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "奥義ダメージ特殊上限UP",
+      "shortName": "特殊上限",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "チェイン与ダメージUP",
+      "shortName": "チェイン与ダメ",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "ターンダメージを軽減",
+      "shortName": "ターンダメ軽減",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "再生",
+      "shortName": "再生",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "HPが100%の時、与ダメージUP",
+      "shortName": "HP100時与ダメ",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "HPが50%以上の時、トリプルアタック確率UP",
+      "shortName": "HP50以上TA",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "HPが50%以下の時、被ダメージを軽減",
+      "shortName": "HP50以下被ダメ軽減",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "クリティカル発動時、ダメージ上限UP",
+      "shortName": "クリ時ダメ上限",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "最大HP上昇/防御力-70%",
+      "shortName": "防-70%",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "通常攻撃ダメージ上限UP/アビリティダメージ上限-80％/奥義ダメージ上限-60％",
+      "shortName": "通常上限↑ アビ/奥義↓",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "アビリティダメージ上限UP/通常攻撃ダメージ上限-20％/奥義ダメージ上限-60％",
+      "shortName": "アビ上限↑ 通常/奥義↓",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "奥義ダメージ上限UP/通常攻撃ダメージ上限-20％/アビリティダメージ上限-80％",
+      "shortName": "奥義上限↑ 通常/アビ↓",
+      "skillGroup": 2,
+      "qualities": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "確率で強化効果が無効化されない",
+      "shortName": "ディスガ",
+      "skillGroup": 2,
+      "qualities": [1]
+    },
+    {
+      "name": "確率で攻撃開始時に自分の弱体効果を1つ回復",
+      "shortName": "クリア",
+      "skillGroup": 2,
+      "qualities": [1]
+    },
+
+    {
+      "name": "弱体アビリティ使用時、敵に被ダメージUP(2回)",
+      "shortName": "弱体アビ使用時被ダメUP",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "回復アビリティ使用時、自分の次に配置されたキャラに自属性追撃効果(1回)",
+      "shortName": "回復アビ時次キャラ追撃",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "リンクアビリティを一定回数使用時に自分のリンクアビリティの再使用間隔を1ターン短縮",
+      "shortName": "リンク短縮",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "使用間隔が10ターン以上のアビリティ使用時、自分に与ダメージUP",
+      "shortName": "間隔10+アビ時与ダメ",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "アビリティを一定回数使用する度に自分にダメージ上限UP(累積)",
+      "shortName": "アビ回数時ダメ上限",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "アビリティダメージを一定量与える毎に自分にアビリティ与ダメージ上昇(累積)",
+      "shortName": "アビダメ時アビ与ダメ",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "1回攻撃発動時、自分に一定個数ランダムな強化効果",
+      "shortName": "1回攻撃時強化",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "ターン終了時、自分がそのターン中に消費したHPに応じて敵に無属性ダメージ",
+      "shortName": "ターン終了時HP消費無属性",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "ターン終了時、自分がそのターン中に消費した奥義ゲージ量に応じて自分に与ダメージ上昇",
+      "shortName": "ターン終了時奥義ゲージ消費与ダメUP",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "攻撃開始時に敵の弱体効果の数が3つ以下の時、自分にブロック効果",
+      "shortName": "ブロック",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "ターン終了時にHPが50%以下の敵がいる時、一度だけ自分のHPを回復",
+      "shortName": "ターン終了時HP50%以下回復",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "サブメンバー時、一定ターン毎に敵全体にランダムな弱体効果を1つ付与(重複不可)",
+      "shortName": "サブメンバー時弱体付与",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "一定回数敵の攻撃行動のターゲットになった場合、一度だけ自分に自属性追撃(1回)効果",
+      "shortName": "被攻撃ターゲット時追撃",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "攻撃行動を行わなかった場合、ターン終了時に自分に一定個数ランダムな強化効果",
+      "shortName": "攻撃行動無し時強化",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "キュアポーションまたはオールポーション使用時にフェイタルチェインゲージUP(重複不可)",
+      "shortName": "ポーションFC",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "敵に一定回数攻撃を与えた時、一度だけ自分に乱撃(3ヒット)効果(1回)",
+      "shortName": "攻撃回数時乱撃",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "戦闘不能になった時、一度だけ味方全体に一定個数ランダムな強化効果",
+      "shortName": "戦闘不能時強化",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "バトル登場時に一度だけ自分の与ダメージUP",
+      "shortName": "バトル登場時与ダメ",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "バトル開始時に自分に一定個数ランダムな強化効果",
+      "shortName": "バトル開始時強化",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "バトル開始時から1ターンの間被ダメージ減少",
+      "shortName": "バトル開始時被ダメ減",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "バトル開始時と5ターン毎に自分にバリア効果",
+      "shortName": "バトル開始時バリア",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "バトル開始時に最大HPの20%を消費するが3ターン後、自分にダメージ上限UP",
+      "shortName": "HP20%消費",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "1番目のアビリティ使用時にHPを一定割合消費するが、1番目のアビリティの使用間隔を1ターン短縮(レベルに応じて消費割合DOWN)",
+      "shortName": "1アビ短縮",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "攻撃開始時、確率で自分に乱撃(6ヒット)効果(1回)",
+      "shortName": "攻撃開始時確率で乱撃",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "確率でターンの進行時に経過ターンを5ターン進める(重複不可)",
+      "shortName": "5ターン進行",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "ターン終了時、確率で敵の強化効果を全て無効化(重複不可)",
+      "shortName": "ターン終了確率でディスペル",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "アイテムドロップ率UP(重複不可)　◆サブメンバーにいる場合でも発動",
+      "shortName": "ドロ率UP",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "獲得経験値UP(重複不可)　◆サブメンバーにいる場合でも発動",
+      "shortName": "経験値UP",
+      "skillGroup": 3,
+      "qualities": [1]
+    },
+    {
+      "name": "バトル終了時にランダムな耳飾りを入手することがある(レベルに応じて入手確率UP/重複不可)　◆サブメンバーにいる場合でも発動",
+      "shortName": "耳飾り",
+      "skillGroup": 3,
+      "qualities": [1]
+    }
+  ]
+}

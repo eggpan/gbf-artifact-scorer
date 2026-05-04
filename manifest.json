@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "GBF Artifact Scorer",
+  "description": "アーティファクトを自分の基準で採点し、設定画面にスコアを表示する非公式のChrome拡張機能です。",
+  "version": "1.0.1",
+  "minimum_chrome_version": "111",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": ["storage"],
+  "action": {
+    "default_title": "GBF Artifact Scorerの設定を開く",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://game.granbluefantasy.jp/*"],
+      "js": ["artifact-list-xhr-bridge.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://game.granbluefantasy.jp/*"],
+      "js": [
+        "core/score-config-core.js",
+        "core/artifact-score-core.js",
+        "core/artifact-list-core.js",
+        "content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["default-user-config.json", "effects-master.json"],
+      "matches": ["https://game.granbluefantasy.jp/*"]
+    }
+  ]
+}
