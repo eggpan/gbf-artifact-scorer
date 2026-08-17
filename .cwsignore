@@ -1,0 +1,14 @@
+.git/
+.github/
+docs/
+tests/
+node_modules/
+dist/
+.cwsignore
+.gitignore
+AGENTS.md
+PRIVACY.md
+README.md
+deno.json
+mise.toml
+gha-creds-*.json
