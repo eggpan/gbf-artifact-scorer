@@ -64,7 +64,7 @@
 
 ### Chromeウェブストアからインストール
 
-公開後は[Chromeウェブストア](https://chromewebstore.google.com/detail/amnkcjbhhippgcaieemghdcomdklfjnh)からインストールできます。
+[Chromeウェブストア](https://chromewebstore.google.com/detail/amnkcjbhhippgcaieemghdcomdklfjnh)からインストールできます。
 
 ### 開発版を読み込む
 
