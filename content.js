@@ -8,11 +8,11 @@ const {
   normalizeArtifactValue,
 } = globalThis.GbfArtifactScoreCore;
 const { resolveUserConfig } = globalThis.GbfArtifactScoreConfigCore;
+const { createMasterLocalization } = globalThis.GbfArtifactLocalizationCore;
 const {
   createArtifactDisplayItems,
   isArtifactListMessage,
   isArtifactListResponse,
-  isRecord,
 } = globalThis.GbfArtifactListCore;
 
 let packagedDefaultUserConfig = { unmatchedScore: 0, rules: [] };
@@ -22,6 +22,7 @@ let activeScoreConfig = createActiveScoreConfig(
   scoreConfigContext,
 );
 let effectDefinitions = new Map();
+let localization;
 let lastArtifactListResponse;
 let scheduledArtifactPublish;
 
@@ -33,7 +34,11 @@ const configPromise = Promise.all([
   .then(([loadedDefaultUserConfig, effectsMaster, stored]) => {
     packagedDefaultUserConfig = loadedDefaultUserConfig;
     scoreConfigContext = createScoreConfigContext(effectsMaster);
-    effectDefinitions = createEffectDefinitions(effectsMaster);
+    localization = createMasterLocalization(
+      effectsMaster,
+      chrome.i18n.getUILanguage(),
+    );
+    effectDefinitions = localization.effectByGameName;
     applyStoredUserConfig(stored[USER_SCORE_CONFIG_KEY]);
   })
   .catch((error) => {
@@ -103,19 +108,6 @@ function createScoreConfigContext(effectsMaster) {
   };
 }
 
-function createEffectDefinitions(effectsMaster) {
-  const effects = Array.isArray(effectsMaster?.effects)
-    ? effectsMaster.effects
-    : [];
-  return new Map(
-    effects.flatMap((effect) =>
-      isRecord(effect) && typeof effect.name === "string"
-        ? [[effect.name, effect]]
-        : []
-    ),
-  );
-}
-
 function applyStoredUserConfig(storedValue) {
   const resolved = resolveUserConfig(storedValue, packagedDefaultUserConfig, {
     ...scoreConfigContext,
@@ -171,12 +163,20 @@ function createDisplayItem(artifact, listItem, scoreConfig) {
     scoreConfig,
     getArtifactScope(artifact, listItem),
     effectDefinitions,
-    { favorite },
+    {
+      favorite,
+      favoriteLabel: localization?.locale === "en" ? "Favorite" : "お気に入り",
+    },
   );
   const isPendingScore = String(artifact.rarity) === "4";
   const displayItem = {
     score: isPendingScore ? null : scoreDetails.total,
-    details: createTooltipLines(scoreDetails, isPendingScore),
+    details: createTooltipLines(scoreDetails, isPendingScore, {
+      pendingLabel: localization?.locale === "en" ? "Pending" : "採点保留",
+      combinationLabel: localization?.locale === "en" ? "Combo" : "組合せ",
+      separator: localization?.locale === "en" ? ": " : "：",
+      combinationSeparator: localization?.locale === "en" ? " + " : "＋",
+    }),
   };
   if (favorite) displayItem.favorite = true;
   if (itemInfo?.classList.contains("unnecessary")) {

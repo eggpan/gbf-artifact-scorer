@@ -1,0 +1,8 @@
+{
+  "extensionDescription": {
+    "message": "An unofficial Chrome extension for scoring artifacts by your own criteria and viewing the results on the settings page."
+  },
+  "actionTitle": {
+    "message": "Open GBF Artifact Scorer settings"
+  }
+}

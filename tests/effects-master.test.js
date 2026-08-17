@@ -37,3 +37,21 @@ Deno.test("属性・武器種マスタに重複がない", () => {
     "闇",
   ]);
 });
+
+Deno.test("英語ローカライズを全ての効果・属性・武器種に定義する", () => {
+  const english = effectsMaster.localizations.en;
+  deepStrictEqual(
+    Object.keys(english.effects),
+    effectsMaster.effects.map((effect) => effect.name),
+  );
+  deepStrictEqual(Object.keys(english.attributes), effectsMaster.attributes);
+  deepStrictEqual(Object.keys(english.weaponTypes), effectsMaster.weaponTypes);
+  equal(
+    new Set(Object.values(english.effects)).size,
+    effectsMaster.effects.length,
+  );
+  Object.values(english.effects).forEach((name) => {
+    ok(name.length > 0);
+    equal(name, name.trim());
+  });
+});

@@ -96,24 +96,29 @@
     scoreConfig,
     artifactScope,
     effectDefinitions = new Map(),
-    { favorite = false } = {},
+    { favorite = false, favoriteLabel = "お気に入り" } = {},
   ) {
     const skills = [1, 2, 3, 4].flatMap((skillNumber) => {
       const skillInfo = artifact[`skill${skillNumber}_info`];
       if (!skillInfo) return [];
 
       const skillQuality = getSkillQuality(artifact, skillInfo, skillNumber);
-      const effectDefinition = effectDefinitions.get(skillInfo.name);
+      const receivedName = typeof skillInfo.name === "string"
+        ? skillInfo.name.trim()
+        : skillInfo.name;
+      const effectDefinition = effectDefinitions.get(receivedName);
+      const effectName = effectDefinition?.name ?? receivedName;
       const score = getSkillScore(
-        skillInfo.name,
+        effectName,
         skillQuality,
         scoreConfig,
         artifactScope,
       );
       return [
         {
-          name: skillInfo.name,
-          shortName: effectDefinition?.shortName ?? skillInfo.name,
+          name: effectName,
+          shortName: effectDefinition?.displayShortName ??
+            effectDefinition?.shortName ?? receivedName,
           quality: skillQuality,
           showsQuality: effectDefinition?.qualities?.length !== 1,
           score,
@@ -130,7 +135,7 @@
     const favoriteBonus = Number(scoreConfig?.favoriteBonus);
     const statusBonuses = favorite && Number.isFinite(favoriteBonus) &&
         favoriteBonus !== 0
-      ? [{ label: "お気に入り", score: favoriteBonus }]
+      ? [{ label: favoriteLabel, score: favoriteBonus }]
       : [];
     return {
       skills,
@@ -213,15 +218,26 @@
     return bestMatch?.score;
   }
 
-  function createTooltipLines(scoreDetails, isPendingScore = false) {
+  function createTooltipLines(
+    scoreDetails,
+    isPendingScore = false,
+    {
+      pendingLabel = "採点保留",
+      combinationLabel = "組合せ",
+      separator = "：",
+      combinationSeparator = "＋",
+    } = {},
+  ) {
     const skillLines = scoreDetails.skills.map((skill) => {
       const quality = skill.showsQuality && skill.quality
         ? ` ${skill.quality}`
         : "";
       if (isPendingScore) return `${skill.shortName}${quality}`;
-      return `${skill.shortName}${quality}：${formatSignedScore(skill.score)}`;
+      return `${skill.shortName}${quality}${separator}${
+        formatSignedScore(skill.score)
+      }`;
     });
-    if (isPendingScore) return ["採点保留", ...skillLines];
+    if (isPendingScore) return [pendingLabel, ...skillLines];
 
     const combinationLines = (scoreDetails.combinationBonuses ?? []).map(
       (bonus) => {
@@ -230,12 +246,14 @@
             ? ` ${effect.quality}`
             : "";
           return `${effect.shortName}${quality}`;
-        }).join("＋");
-        return `組合せ ${effects}：${formatSignedScore(bonus.score)}`;
+        }).join(combinationSeparator);
+        return `${combinationLabel} ${effects}${separator}${
+          formatSignedScore(bonus.score)
+        }`;
       },
     );
     const statusLines = (scoreDetails.statusBonuses ?? []).map((bonus) =>
-      `${bonus.label}：${formatSignedScore(bonus.score)}`
+      `${bonus.label}${separator}${formatSignedScore(bonus.score)}`
     );
     return [...skillLines, ...combinationLines, ...statusLines];
   }

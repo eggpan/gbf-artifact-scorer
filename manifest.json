@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
+  "default_locale": "ja",
   "name": "GBF Artifact Scorer",
-  "description": "アーティファクトを自分の基準で採点し、設定画面にスコアを表示する非公式のChrome拡張機能です。",
+  "description": "__MSG_extensionDescription__",
   "version": "1.0.1",
   "minimum_chrome_version": "111",
   "icons": {
@@ -12,7 +13,7 @@
   },
   "permissions": ["storage"],
   "action": {
-    "default_title": "GBF Artifact Scorerの設定を開く",
+    "default_title": "__MSG_actionTitle__",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",
@@ -37,6 +38,7 @@
     {
       "matches": ["https://game.granbluefantasy.jp/*"],
       "js": [
+        "core/localization-core.js",
         "core/score-config-core.js",
         "core/artifact-score-core.js",
         "core/artifact-list-core.js",
