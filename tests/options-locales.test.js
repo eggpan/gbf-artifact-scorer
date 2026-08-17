@@ -16,6 +16,9 @@ Deno.test("英語UIの固定文言と動的な件数を翻訳する", () => {
   );
   equal(ui.translateText("Q2以上"), "Q2 or higher");
   equal(ui.translateText("Q4以下"), "Q4 or lower");
+  equal(ui.translateText("個別指定"), "Exact");
+  equal(ui.translateText("範囲指定"), "Range");
+  equal(ui.translateText("グループⅡ"), "Group II");
 });
 
 Deno.test("日本語UIでは元の文言を維持する", () => {

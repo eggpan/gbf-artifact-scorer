@@ -293,14 +293,17 @@
       const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
       while (walker.nextNode()) translateNode(walker.currentNode);
       if (node instanceof Element) {
-        node.querySelectorAll("[placeholder], [aria-label], [title]").forEach(
-          translateAttributes,
-        );
+        node.querySelectorAll("[placeholder], [aria-label], [title], [label]")
+          .forEach(
+            translateAttributes,
+          );
       }
     }
 
     function translateAttributes(element) {
-      for (const attribute of ["placeholder", "aria-label", "title"]) {
+      for (
+        const attribute of ["placeholder", "aria-label", "title", "label"]
+      ) {
         if (!element.hasAttribute(attribute)) continue;
         const value = element.getAttribute(attribute);
         const translated = translateText(value);
