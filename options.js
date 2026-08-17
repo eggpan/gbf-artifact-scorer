@@ -1,6 +1,11 @@
 const USER_SCORE_CONFIG_KEY = "userScoreConfig";
 const ARTIFACT_DISPLAY_STATE_KEY = "artifactDisplayState";
 const {
+  canonicalizeConfig,
+  createMasterLocalization,
+  localizeConfig,
+} = globalThis.GbfArtifactLocalizationCore;
+const {
   createCombinationRule,
   createEmptyUserConfig,
   createRule,
@@ -128,6 +133,7 @@ const state = {
   combinationEditKey: null,
   combinationCopySourceKey: null,
   artifactDisplayState: { items: [] },
+  localization: null,
 };
 const inlineScoreFeedbackTimers = new WeakMap();
 const DEFAULT_SCORE_HIGHLIGHT = { highThreshold: 10, lowThreshold: 0 };
@@ -295,12 +301,14 @@ async function initialize() {
   }
 
   const master = await masterResponse.json();
-  state.effects = master.effects;
-  state.attributes = master.attributes;
-  state.weaponTypes = master.weaponTypes;
-  state.effectByName = new Map(
-    state.effects.map((effect, index) => [effect.name, { ...effect, index }]),
+  state.localization = createMasterLocalization(
+    master,
+    chrome.i18n.getUILanguage(),
   );
+  state.effects = state.localization.effects;
+  state.attributes = state.localization.attributes;
+  state.weaponTypes = state.localization.weaponTypes;
+  state.effectByName = state.localization.effectByName;
   const defaultValue = await defaultResponse.json();
   const configContext = {
     effectByName: state.effectByName,
@@ -508,7 +516,9 @@ function renderEffectOptions(selectedEffect) {
 
   if (group) {
     candidates.forEach((effect) => {
-      elements.effectSelect.append(createOption(effect.name, effect.name));
+      elements.effectSelect.append(
+        createOption(effect.name, effect.displayName),
+      );
     });
   } else {
     [1, 2, 3].forEach((skillGroup) => {
@@ -517,7 +527,7 @@ function renderEffectOptions(selectedEffect) {
       candidates
         .filter((effect) => effect.skillGroup === skillGroup)
         .forEach((effect) => {
-          optionGroup.append(createOption(effect.name, effect.name));
+          optionGroup.append(createOption(effect.name, effect.displayName));
         });
       elements.effectSelect.append(optionGroup);
     });
@@ -544,7 +554,7 @@ function renderCombinationEffectOptions(select, selectedEffect) {
     state.effects
       .filter((effect) => effect.skillGroup === skillGroup)
       .forEach((effect) => {
-        optionGroup.append(createOption(effect.name, effect.name));
+        optionGroup.append(createOption(effect.name, effect.displayName));
       });
     select.append(optionGroup);
   });
@@ -595,7 +605,7 @@ function renderScopeOptions(container, choices, selectedValues) {
   container.replaceChildren(
     createScopeOption("全て", "", selected.size === 0, true),
     ...choices.map((choice) =>
-      createScopeOption(choice, choice, selected.has(choice))
+      createScopeOption(getScopeLabel(choice), choice, selected.has(choice))
     ),
   );
 }
@@ -1306,7 +1316,7 @@ function renderRules() {
     }
     row.append(
       createCell(toRomanNumeral(effect.skillGroup), "group-cell"),
-      createCell(rule.effect, "effect-cell"),
+      createCell(getEffectLabel(rule.effect), "effect-cell"),
       createConditionsCell(rule),
       createScoreCell(rule, ruleKey),
       createActionCell(ruleKey),
@@ -1544,7 +1554,8 @@ async function commitConfig(createUpdate, failureMessage) {
 }
 
 function exportJson() {
-  const blob = new Blob([`${JSON.stringify(state.config, null, 2)}\n`], {
+  const exportedConfig = localizeConfig(state.config, state.localization);
+  const blob = new Blob([`${JSON.stringify(exportedConfig, null, 2)}\n`], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob);
@@ -1562,7 +1573,11 @@ async function importJson(event) {
   if (!file) return;
 
   try {
-    const imported = validateUserConfig(JSON.parse(await file.text()), {
+    const importedValue = canonicalizeConfig(
+      JSON.parse(await file.text()),
+      state.localization,
+    );
+    const imported = validateUserConfig(importedValue, {
       effectByName: state.effectByName,
       attributes: state.attributes,
       weaponTypes: state.weaponTypes,
@@ -1672,7 +1687,7 @@ function createScoreCell(rule, ruleKey) {
     rule.score,
     "ruleScoreKey",
     ruleKey,
-    `${rule.effect}のスコア`,
+    `${getEffectLabel(rule.effect)}のスコア`,
   );
 }
 
@@ -1752,12 +1767,18 @@ function createConditionsCell(rule) {
   }
   if (rule.attributes?.length) {
     conditionItems.push(
-      createConditionItem("属性", rule.attributes.join("・")),
+      createConditionItem(
+        "属性",
+        rule.attributes.map(getAttributeLabel).join("・"),
+      ),
     );
   }
   if (rule.weaponTypes?.length) {
     conditionItems.push(
-      createConditionItem("武器種", rule.weaponTypes.join("・")),
+      createConditionItem(
+        "武器種",
+        rule.weaponTypes.map(getWeaponTypeLabel).join("・"),
+      ),
     );
   }
   if (conditionItems.length > 0) {
@@ -1792,6 +1813,24 @@ function createConditionItem(label, value) {
   valueElement.textContent = value;
   item.append(labelElement, valueElement);
   return item;
+}
+
+function getEffectLabel(effectName) {
+  return state.localization?.effectLabels.get(effectName) ?? effectName;
+}
+
+function getAttributeLabel(attribute) {
+  return state.localization?.attributeLabels.get(attribute) ?? attribute;
+}
+
+function getWeaponTypeLabel(weaponType) {
+  return state.localization?.weaponTypeLabels.get(weaponType) ?? weaponType;
+}
+
+function getScopeLabel(value) {
+  return getAttributeLabel(value) !== value
+    ? getAttributeLabel(value)
+    : getWeaponTypeLabel(value);
 }
 
 function createActionCell(ruleKey) {

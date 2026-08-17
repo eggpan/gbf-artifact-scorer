@@ -96,24 +96,29 @@
     scoreConfig,
     artifactScope,
     effectDefinitions = new Map(),
-    { favorite = false } = {},
+    { favorite = false, favoriteLabel = "お気に入り" } = {},
   ) {
     const skills = [1, 2, 3, 4].flatMap((skillNumber) => {
       const skillInfo = artifact[`skill${skillNumber}_info`];
       if (!skillInfo) return [];
 
       const skillQuality = getSkillQuality(artifact, skillInfo, skillNumber);
-      const effectDefinition = effectDefinitions.get(skillInfo.name);
+      const receivedName = typeof skillInfo.name === "string"
+        ? skillInfo.name.trim()
+        : skillInfo.name;
+      const effectDefinition = effectDefinitions.get(receivedName);
+      const effectName = effectDefinition?.name ?? receivedName;
       const score = getSkillScore(
-        skillInfo.name,
+        effectName,
         skillQuality,
         scoreConfig,
         artifactScope,
       );
       return [
         {
-          name: skillInfo.name,
-          shortName: effectDefinition?.shortName ?? skillInfo.name,
+          name: effectName,
+          shortName: effectDefinition?.displayShortName ??
+            effectDefinition?.shortName ?? receivedName,
           quality: skillQuality,
           showsQuality: effectDefinition?.qualities?.length !== 1,
           score,
@@ -130,7 +135,7 @@
     const favoriteBonus = Number(scoreConfig?.favoriteBonus);
     const statusBonuses = favorite && Number.isFinite(favoriteBonus) &&
         favoriteBonus !== 0
-      ? [{ label: "お気に入り", score: favoriteBonus }]
+      ? [{ label: favoriteLabel, score: favoriteBonus }]
       : [];
     return {
       skills,

@@ -37,6 +37,7 @@
     {
       "matches": ["https://game.granbluefantasy.jp/*"],
       "js": [
+        "core/localization-core.js",
         "core/score-config-core.js",
         "core/artifact-score-core.js",
         "core/artifact-list-core.js",

@@ -32,15 +32,20 @@ Deno.test("通信監視をMAIN worldで実行しゲームDOMへ要素を追加�
   equal(bridgeScript.css, undefined);
 
   const contentScripts = contentScript.js;
+  const localizationCoreIndex = contentScripts.indexOf(
+    "core/localization-core.js",
+  );
   const configCoreIndex = contentScripts.indexOf("core/score-config-core.js");
   const scoreCoreIndex = contentScripts.indexOf("core/artifact-score-core.js");
   const listCoreIndex = contentScripts.indexOf("core/artifact-list-core.js");
   const contentIndex = contentScripts.indexOf("content.js");
 
+  ok(localizationCoreIndex >= 0);
   ok(configCoreIndex >= 0);
   ok(scoreCoreIndex >= 0);
   ok(listCoreIndex >= 0);
   ok(contentIndex >= 0);
+  ok(localizationCoreIndex < configCoreIndex);
   ok(configCoreIndex < scoreCoreIndex);
   ok(scoreCoreIndex < listCoreIndex);
   ok(listCoreIndex < contentIndex);
