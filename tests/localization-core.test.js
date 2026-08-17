@@ -73,6 +73,13 @@ Deno.test("英語ゲーム応答を既存の日本語設定で採点する", () 
   equal(result.skills[0].shortName, "ATK");
 });
 
+Deno.test("Chromeとゲームの表示言語が異なっても英語効果名を解決する", () => {
+  const localization = createMasterLocalization(effectsMaster, "ja");
+
+  equal(localization.effectByGameName.get("ATK").name, "攻撃力");
+  equal(localization.effectByGameName.get("ATK").displayName, "攻撃力");
+});
+
 Deno.test("英語環境では設定JSONの効果名と対象範囲を英語へ変換する", () => {
   const localization = createMasterLocalization(effectsMaster, "en");
   const localized = localizeConfig({

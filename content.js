@@ -13,7 +13,6 @@ const {
   createArtifactDisplayItems,
   isArtifactListMessage,
   isArtifactListResponse,
-  isRecord,
 } = globalThis.GbfArtifactListCore;
 
 let packagedDefaultUserConfig = { unmatchedScore: 0, rules: [] };
@@ -172,7 +171,12 @@ function createDisplayItem(artifact, listItem, scoreConfig) {
   const isPendingScore = String(artifact.rarity) === "4";
   const displayItem = {
     score: isPendingScore ? null : scoreDetails.total,
-    details: createTooltipLines(scoreDetails, isPendingScore),
+    details: createTooltipLines(scoreDetails, isPendingScore, {
+      pendingLabel: localization?.locale === "en" ? "Pending" : "採点保留",
+      combinationLabel: localization?.locale === "en" ? "Combo" : "組合せ",
+      separator: localization?.locale === "en" ? ": " : "：",
+      combinationSeparator: localization?.locale === "en" ? " + " : "＋",
+    }),
   };
   if (favorite) displayItem.favorite = true;
   if (itemInfo?.classList.contains("unnecessary")) {

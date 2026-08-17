@@ -218,15 +218,26 @@
     return bestMatch?.score;
   }
 
-  function createTooltipLines(scoreDetails, isPendingScore = false) {
+  function createTooltipLines(
+    scoreDetails,
+    isPendingScore = false,
+    {
+      pendingLabel = "採点保留",
+      combinationLabel = "組合せ",
+      separator = "：",
+      combinationSeparator = "＋",
+    } = {},
+  ) {
     const skillLines = scoreDetails.skills.map((skill) => {
       const quality = skill.showsQuality && skill.quality
         ? ` ${skill.quality}`
         : "";
       if (isPendingScore) return `${skill.shortName}${quality}`;
-      return `${skill.shortName}${quality}：${formatSignedScore(skill.score)}`;
+      return `${skill.shortName}${quality}${separator}${
+        formatSignedScore(skill.score)
+      }`;
     });
-    if (isPendingScore) return ["採点保留", ...skillLines];
+    if (isPendingScore) return [pendingLabel, ...skillLines];
 
     const combinationLines = (scoreDetails.combinationBonuses ?? []).map(
       (bonus) => {
@@ -235,12 +246,14 @@
             ? ` ${effect.quality}`
             : "";
           return `${effect.shortName}${quality}`;
-        }).join("＋");
-        return `組合せ ${effects}：${formatSignedScore(bonus.score)}`;
+        }).join(combinationSeparator);
+        return `${combinationLabel} ${effects}${separator}${
+          formatSignedScore(bonus.score)
+        }`;
       },
     );
     const statusLines = (scoreDetails.statusBonuses ?? []).map((bonus) =>
-      `${bonus.label}：${formatSignedScore(bonus.score)}`
+      `${bonus.label}${separator}${formatSignedScore(bonus.score)}`
     );
     return [...skillLines, ...combinationLines, ...statusLines];
   }

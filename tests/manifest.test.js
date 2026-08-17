@@ -1,11 +1,27 @@
 import { deepStrictEqual, equal, ok } from "node:assert/strict";
 import manifest from "../manifest.json" with { type: "json" };
+import englishMessages from "../_locales/en/messages.json" with {
+  type: "json",
+};
+import japaneseMessages from "../_locales/ja/messages.json" with {
+  type: "json",
+};
 
 Deno.test("拡張機能名・説明・権限を明示する", () => {
   equal(manifest.name, "GBF Artifact Scorer");
-  ok(manifest.description.includes("自分の基準で採点"));
-  ok(manifest.description.includes("設定画面にスコアを表示"));
-  ok(manifest.description.includes("非公式"));
+  equal(manifest.default_locale, "ja");
+  equal(manifest.description, "__MSG_extensionDescription__");
+  ok(
+    japaneseMessages.extensionDescription.message.includes("自分の基準で採点"),
+  );
+  ok(
+    japaneseMessages.extensionDescription.message.includes(
+      "設定画面にスコアを表示",
+    ),
+  );
+  ok(japaneseMessages.extensionDescription.message.includes("非公式"));
+  ok(englishMessages.extensionDescription.message.includes("unofficial"));
+  equal(manifest.action.default_title, "__MSG_actionTitle__");
   equal(manifest.version, "1.0.1");
   equal(manifest.minimum_chrome_version, "111");
   deepStrictEqual(manifest.permissions, ["storage"]);

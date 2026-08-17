@@ -1,5 +1,9 @@
 const USER_SCORE_CONFIG_KEY = "userScoreConfig";
 const ARTIFACT_DISPLAY_STATE_KEY = "artifactDisplayState";
+const ui = globalThis.GbfArtifactOptionsI18n.createOptionsI18n(
+  chrome.i18n.getUILanguage(),
+);
+ui.localizeDocument(document);
 const {
   canonicalizeConfig,
   createMasterLocalization,
@@ -188,28 +192,45 @@ function renderArtifactDisplay() {
 
     const itemStatuses = [];
     if (item?.favorite) {
-      itemStatuses.push("お気に入り");
-      cell.append(createArtifactStatusBadge("favorite", "★", "お気に入り"));
+      const label = ui.locale === "en" ? "Favorite" : "お気に入り";
+      itemStatuses.push(label);
+      cell.append(createArtifactStatusBadge("favorite", "★", label));
     }
     if (item?.unnecessary) {
-      itemStatuses.push("不用品");
+      const label = ui.locale === "en" ? "Unneeded" : "不用品";
+      itemStatuses.push(label);
       cell.append(
-        createArtifactStatusBadge("unnecessary", "不用品", "不用品"),
+        createArtifactStatusBadge(
+          "unnecessary",
+          ui.locale === "en" ? "Unneeded" : "不用品",
+          label,
+        ),
       );
     }
 
     const scoreLabel = item
-      ? item.score === null ? "採点保留" : `スコア${item.score}`
+      ? item.score === null
+        ? ui.locale === "en" ? "Pending" : "採点保留"
+        : ui.locale === "en"
+        ? `Score ${item.score}`
+        : `スコア${item.score}`
+      : ui.locale === "en"
+      ? "No data"
       : "データなし";
+    const separator = ui.locale === "en" ? ", " : "、";
     const selectedLabel = displayState.selectedPosition === position
-      ? "、ゲーム画面で選択中"
+      ? `${separator}${
+        ui.locale === "en" ? "selected in the game" : "ゲーム画面で選択中"
+      }`
       : "";
     const statusLabel = itemStatuses.length > 0
-      ? `、${itemStatuses.join("、")}`
+      ? `${separator}${itemStatuses.join(separator)}`
       : "";
     cell.setAttribute(
       "aria-label",
-      `${position}番目、${scoreLabel}${statusLabel}${selectedLabel}`,
+      ui.locale === "en"
+        ? `Item ${position}, ${scoreLabel}${statusLabel}${selectedLabel}`
+        : `${position}番目、${scoreLabel}${statusLabel}${selectedLabel}`,
     );
     if (item?.details?.length) cell.title = item.details.join("\n");
     elements.artifactDisplayGrid.append(cell);
@@ -242,13 +263,13 @@ function renderArtifactDisplayDetails(displayState, itemsByPosition) {
   }
 
   const statuses = [
-    item.favorite ? "お気に入り" : undefined,
-    item.unnecessary ? "不用品" : undefined,
+    item.favorite ? ui.locale === "en" ? "Favorite" : "お気に入り" : undefined,
+    item.unnecessary ? ui.locale === "en" ? "Unneeded" : "不用品" : undefined,
   ].filter(Boolean);
   elements.artifactDisplayDetailsPosition.textContent = [
-    `${item.position}番目`,
+    ui.locale === "en" ? `Item ${item.position}` : `${item.position}番目`,
     ...statuses,
-  ].join("・");
+  ].join(ui.locale === "en" ? " / " : "・");
   elements.artifactDisplayDetailsTotal.textContent = item.score === null
     ? "—"
     : String(item.score);
@@ -274,7 +295,12 @@ function createArtifactStatusBadge(type, text, label) {
 
 initialize().catch((error) => {
   console.error(error);
-  showStatus(`設定画面を初期化できませんでした: ${error.message}`, true);
+  showStatus(
+    ui.locale === "en"
+      ? `Could not initialize the settings page: ${error.message}`
+      : `設定画面を初期化できませんでした: ${error.message}`,
+    true,
+  );
 });
 chrome.storage.onChanged.addListener(handleArtifactDisplayStorageChange);
 
@@ -291,12 +317,16 @@ async function initialize() {
 
   if (!masterResponse.ok) {
     throw new Error(
-      `効果マスタを読み込めませんでした: ${masterResponse.status}`,
+      ui.locale === "en"
+        ? `Could not load the effect master: ${masterResponse.status}`
+        : `効果マスタを読み込めませんでした: ${masterResponse.status}`,
     );
   }
   if (!defaultResponse.ok) {
     throw new Error(
-      `標準設定を読み込めませんでした: ${defaultResponse.status}`,
+      ui.locale === "en"
+        ? `Could not load the default settings: ${defaultResponse.status}`
+        : `標準設定を読み込めませんでした: ${defaultResponse.status}`,
     );
   }
 
@@ -336,8 +366,9 @@ async function initialize() {
     await chrome.storage.local.set({
       [USER_SCORE_CONFIG_KEY]: structuredClone(state.config),
     });
-    initializationWarning =
-      `${resolvedConfig.removedZeroScoreCount}件の0点設定を削除しました。`;
+    initializationWarning = ui.locale === "en"
+      ? `Removed ${resolvedConfig.removedZeroScoreCount} zero-point settings.`
+      : `${resolvedConfig.removedZeroScoreCount}件の0点設定を削除しました。`;
   }
 
   state.config = sortConfig(state.config, state.effectByName);
@@ -753,9 +784,13 @@ async function handleRuleAction(event) {
   if (button.dataset.action === "delete") {
     if (
       !globalThis.confirm(
-        `${
-          formatRuleSummary(rule)
-        }を削除しますか？\nこの操作は元に戻せません。`,
+        ui.locale === "en"
+          ? `Delete ${
+            formatLocalizedRuleSummary(rule)
+          }?\nThis action cannot be undone.`
+          : `${
+            formatLocalizedRuleSummary(rule)
+          }を削除しますか？\nこの操作は元に戻せません。`,
       )
     ) {
       return;
@@ -793,7 +828,11 @@ async function handleRuleAction(event) {
     populateRuleForm(rule);
     elements.ruleForm.scrollIntoView({ behavior: "smooth", block: "center" });
     elements.effectSelect.focus({ preventScroll: true });
-    showStatus(`${rule.effect}の設定を追加フォームへコピーしました。`);
+    showStatus(
+      ui.locale === "en"
+        ? `Copied the ${getEffectLabel(rule.effect)} settings to the add form.`
+        : `${rule.effect}の設定を追加フォームへコピーしました。`,
+    );
     return;
   }
 
@@ -945,9 +984,13 @@ async function handleCombinationAction(event) {
   if (button.dataset.action === "delete") {
     if (
       !globalThis.confirm(
-        `${
-          formatCombinationSummary(rule)
-        }を削除しますか？\nこの操作は元に戻せません。`,
+        ui.locale === "en"
+          ? `Delete ${
+            formatLocalizedCombinationSummary(rule)
+          }?\nThis action cannot be undone.`
+          : `${
+            formatLocalizedCombinationSummary(rule)
+          }を削除しますか？\nこの操作は元に戻せません。`,
       )
     ) {
       return;
@@ -1232,7 +1275,7 @@ function withScoreHighlight(config, scoreHighlight) {
 }
 
 function showScoreHighlightError(message) {
-  elements.scoreHighlightMessage.textContent = message;
+  elements.scoreHighlightMessage.textContent = ui.translateText(message);
   elements.scoreHighlightMessage.hidden = false;
 }
 
@@ -1281,7 +1324,11 @@ async function handleInlineScoreChange(event) {
     elements.scoreInput.value = score;
   }
   showInlineScoreFeedback(input, false);
-  showStatus(`${rule.effect}のスコアを保存しました。`);
+  showStatus(
+    ui.locale === "en"
+      ? `Saved the score for ${getEffectLabel(rule.effect)}.`
+      : `${rule.effect}のスコアを保存しました。`,
+  );
 }
 
 function handleInlineScoreKeydown(event) {
@@ -1296,7 +1343,10 @@ function renderRules() {
   elements.rulesBody.replaceChildren();
   const searchQuery = elements.ruleSearch.value.trim();
   const visibleRules = state.config.rules
-    .filter((rule) => matchesRuleSearch(rule, searchQuery, state.effectByName));
+    .filter((rule) =>
+      matchesRuleSearch(rule, searchQuery, state.effectByName) ||
+      matchesLocalizedRuleSearch(rule, searchQuery)
+    );
 
   elements.ruleCount.textContent = searchQuery
     ? `${visibleRules.length} / ${state.config.rules.length}件`
@@ -1325,6 +1375,16 @@ function renderRules() {
   });
 }
 
+function matchesLocalizedRuleSearch(rule, searchQuery) {
+  const query = searchQuery.toLocaleLowerCase(ui.locale);
+  if (!query) return true;
+  return [
+    getEffectLabel(rule.effect),
+    ...(rule.attributes ?? []).map(getAttributeLabel),
+    ...(rule.weaponTypes ?? []).map(getWeaponTypeLabel),
+  ].some((value) => value.toLocaleLowerCase(ui.locale).includes(query));
+}
+
 function resetRuleForm({ collapse = true } = {}) {
   state.editKey = null;
   state.ruleCopySourceKey = null;
@@ -1348,7 +1408,7 @@ function resetRuleForm({ collapse = true } = {}) {
 }
 
 function showRuleFormError(message) {
-  elements.ruleFormMessage.textContent = message;
+  elements.ruleFormMessage.textContent = ui.translateText(message);
   elements.ruleFormMessage.hidden = false;
 }
 
@@ -1398,7 +1458,7 @@ function resetCombinationForm({ collapse = true } = {}) {
 }
 
 function showCombinationFormError(message) {
-  elements.combinationFormMessage.textContent = message;
+  elements.combinationFormMessage.textContent = ui.translateText(message);
   elements.combinationFormMessage.hidden = false;
 }
 
@@ -1445,7 +1505,7 @@ function createCombinationEffectsCell(rule) {
     }
     const item = document.createElement("span");
     item.className = "combination-effect-item";
-    item.textContent = formatEffectRequirement(requirement);
+    item.textContent = formatLocalizedEffectRequirement(requirement);
     list.append(item);
   });
   cell.append(list);
@@ -1457,7 +1517,11 @@ function createCombinationScoreCell(rule, ruleKey) {
     rule.score,
     "combinationScoreKey",
     ruleKey,
-    `${rule.effects.map(formatEffectRequirement).join("と")}の加算スコア`,
+    ui.locale === "en"
+      ? `Bonus score for ${
+        rule.effects.map(formatLocalizedEffectRequirement).join(" and ")
+      }`
+      : `${rule.effects.map(formatEffectRequirement).join("と")}の加算スコア`,
   );
 }
 
@@ -1548,7 +1612,7 @@ async function commitConfig(createUpdate, failureMessage) {
     return await operation;
   } catch (error) {
     console.error(error);
-    showStatus(`${failureMessage}: ${error.message}`, true);
+    showStatus(`${ui.translateText(failureMessage)}: ${error.message}`, true);
     return null;
   }
 }
@@ -1595,15 +1659,29 @@ async function importJson(event) {
     refreshConfigScreen();
     showStatus("JSONからユーザー設定を読み込みました。");
   } catch (error) {
-    showStatus(`JSONを読み込めませんでした: ${error.message}`, true);
+    showStatus(
+      ui.locale === "en"
+        ? `Could not import JSON: ${error.message}`
+        : `JSONを読み込めませんでした: ${error.message}`,
+      true,
+    );
   }
 }
 
 function confirmImportReplacement(imported) {
   const currentCombinationCount = state.config.combinationRules?.length ?? 0;
   const importedCombinationCount = imported.combinationRules?.length ?? 0;
-  return globalThis.confirm(
-    [
+  const message = ui.locale === "en"
+    ? [
+      "Replace the current settings with the imported JSON settings?",
+      "",
+      `Scoring rules: ${state.config.rules.length} → ${imported.rules.length}`,
+      `Combination bonuses: ${currentCombinationCount} → ${importedCombinationCount}`,
+      "",
+      "Display settings, the score without a matching rule, and the favorite bonus will also be replaced.",
+      "This action cannot be undone.",
+    ]
+    : [
       "JSONの設定で現在の設定を置き換えますか？",
       "",
       `採点ルール: ${state.config.rules.length}件 → ${imported.rules.length}件`,
@@ -1611,14 +1689,16 @@ function confirmImportReplacement(imported) {
       "",
       "表示設定、ルール未設定時のスコア、お気に入り加点も置き換わります。",
       "この操作は元に戻せません。",
-    ].join("\n"),
-  );
+    ];
+  return globalThis.confirm(message.join("\n"));
 }
 
 async function restoreDefaultConfig() {
   if (
     !globalThis.confirm(
-      "現在の採点ルールを破棄して、同梱の標準設定に戻しますか？\n表示設定は保持されます。",
+      ui.locale === "en"
+        ? "Discard the current scoring rules and restore the bundled defaults?\nDisplay settings will be kept."
+        : "現在の採点ルールを破棄して、同梱の標準設定に戻しますか？\n表示設定は保持されます。",
     )
   ) {
     return;
@@ -1642,7 +1722,9 @@ async function restoreDefaultConfig() {
 async function clearScoreRules() {
   if (
     !globalThis.confirm(
-      "効果ごとの採点ルールと組み合わせボーナスを全て削除しますか？\n表示設定は保持されます。",
+      ui.locale === "en"
+        ? "Delete all effect scoring rules and combination bonuses?\nDisplay settings will be kept."
+        : "効果ごとの採点ルールと組み合わせボーナスを全て削除しますか？\n表示設定は保持されます。",
     )
   ) {
     return;
@@ -1819,6 +1901,53 @@ function getEffectLabel(effectName) {
   return state.localization?.effectLabels.get(effectName) ?? effectName;
 }
 
+function formatLocalizedEffectRequirement(requirement) {
+  const name = getEffectLabel(requirement.effect);
+  return requirement.quality === undefined
+    ? name
+    : `${name} Q${requirement.quality}`;
+}
+
+function formatLocalizedRuleSummary(rule) {
+  if (ui.locale !== "en") return formatRuleSummary(rule);
+  const conditions = [];
+  if (rule.quality !== undefined) conditions.push(`Q${rule.quality}`);
+  if (rule.attributes?.length) {
+    conditions.push(
+      `Element ${rule.attributes.map(getAttributeLabel).join(" / ")}`,
+    );
+  }
+  if (rule.weaponTypes?.length) {
+    conditions.push(
+      `Weapon Type ${rule.weaponTypes.map(getWeaponTypeLabel).join(" / ")}`,
+    );
+  }
+  return `“${getEffectLabel(rule.effect)}” (${
+    conditions.join("; ") || "No conditions"
+  }, score ${rule.score})`;
+}
+
+function formatLocalizedCombinationSummary(rule) {
+  if (ui.locale !== "en") return formatCombinationSummary(rule);
+  const effects = rule.effects.map(formatLocalizedEffectRequirement).join(
+    " + ",
+  );
+  const conditions = [];
+  if (rule.attributes?.length) {
+    conditions.push(
+      `Element ${rule.attributes.map(getAttributeLabel).join(" / ")}`,
+    );
+  }
+  if (rule.weaponTypes?.length) {
+    conditions.push(
+      `Weapon Type ${rule.weaponTypes.map(getWeaponTypeLabel).join(" / ")}`,
+    );
+  }
+  return `“${effects}” (${
+    conditions.join("; ") || "No conditions"
+  }, bonus score ${rule.score})`;
+}
+
 function getAttributeLabel(attribute) {
   return state.localization?.attributeLabels.get(attribute) ?? attribute;
 }
@@ -1880,6 +2009,6 @@ function toKebabCase(value) {
 }
 
 function showStatus(message, isError = false) {
-  elements.statusMessage.textContent = message;
+  elements.statusMessage.textContent = ui.translateText(message);
   elements.statusMessage.classList.toggle("error", isError);
 }

@@ -38,7 +38,13 @@
       localizedEffect.shortName = localizedEffect.displayShortName;
       effectByName.set(effect.name, localizedEffect);
       effectLabels.set(effect.name, localizedName);
-      for (const gameName of [effect.name, localizedName]) {
+      const gameNames = [
+        effect.name,
+        ...Object.values(master?.localizations ?? {}).map((translation) =>
+          translation?.effects?.[effect.name]
+        ),
+      ].filter((name) => typeof name === "string");
+      for (const gameName of gameNames) {
         effectByGameName.set(normalizeLookupKey(gameName), localizedEffect);
       }
     }

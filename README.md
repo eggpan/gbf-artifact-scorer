@@ -38,6 +38,7 @@
 - 同梱された標準設定への復元
 - 採点ルールの全削除
 - 設定JSONの書き出しと読み込み
+- Chromeの表示言語に応じた日本語・英語の設定画面
 
 ## 採点方法
 
@@ -100,6 +101,10 @@ Googleアカウントを利用したブラウザー間同期は行いません�
 
 別の環境へ移す場合は、設定画面の「JSONを書き出す」と「JSONを読み込む」を使用してください。
 
+JSONへ書き出す効果名・属性・武器種は、現在のChromeの表示言語に合わせて日本語または英語になります。
+読み込み時は日本語名と英語名の両方に対応しており、異なる表示言語で書き出した設定も利用できます。
+拡張機能内部では既存設定との互換性を保つため、従来の日本語名を共通の識別名として保存します。
+
 「標準設定に戻す」は、現在の採点ルールを同梱された`default-user-config.json`の内容で置き換えます。一覧プレビューの表示設定は保持します。
 「採点ルールを全て削除」は、効果ごとのルールと組み合わせボーナスを削除します。
 
@@ -134,6 +139,7 @@ deno test
 
 ```text
 core/
+  localization-core.js       # 効果名・設定JSONのローカライズ
   score-config-core.js       # 設定の検証・正規化
   score-config-editor-core.js # 設定画面のルール編集・並び替え
   artifact-score-core.js     # 採点・ツールチップ整形
@@ -149,6 +155,7 @@ tests/
 content.js                   # ゲーム画面の一覧・選択状態の読み取りと採点
 artifact-list-xhr-bridge.js  # ゲームのアーティファクト一覧通信の監視
 options.html / options.css / options.js # 設定画面
+options-locales.js           # 設定画面の日本語・英語表示
 effects-master.json          # 効果マスタ
 default-user-config.json     # 初回利用時の標準設定
 ```
