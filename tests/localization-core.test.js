@@ -86,6 +86,7 @@ Deno.test("英語環境では設定JSONの効果名と対象範囲を英語へ�
     unmatchedScore: 0,
     rules: [{
       effect: "攻撃力",
+      qualityMin: 2,
       attributes: ["火", "水"],
       weaponTypes: ["剣", "刀"],
       score: 5,
@@ -99,6 +100,7 @@ Deno.test("英語環境では設定JSONの効果名と対象範囲を英語へ�
 
   deepStrictEqual(localized.rules[0], {
     effect: "ATK",
+    qualityMin: 2,
     attributes: ["Fire", "Water"],
     weaponTypes: ["Sabre", "Katana"],
     score: 5,

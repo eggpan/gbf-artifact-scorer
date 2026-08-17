@@ -162,6 +162,26 @@ Deno.test("同じ条件種別なら対象範囲が狭いルールを優先する
   );
 });
 
+Deno.test("クオリティ範囲へ一致し、単一指定と狭い範囲を優先する", () => {
+  const config = createScoreConfig({
+    unmatchedScore: -1,
+    rules: [
+      { effect: "攻撃力", score: 1 },
+      { effect: "攻撃力", qualityMin: 2, score: 2 },
+      { effect: "攻撃力", qualityMin: 4, score: 3 },
+      { effect: "攻撃力", quality: 4, score: 4 },
+      { effect: "HP", qualityMax: 2, score: 5 },
+    ],
+  });
+
+  equal(getSkillScore("攻撃力", 1, config, {}), 1);
+  equal(getSkillScore("攻撃力", 2, config, {}), 2);
+  equal(getSkillScore("攻撃力", 4, config, {}), 4);
+  equal(getSkillScore("攻撃力", 5, config, {}), 3);
+  equal(getSkillScore("HP", 2, config, {}), 5);
+  equal(getSkillScore("HP", 3, config, {}), -1);
+});
+
 Deno.test("限定度が同じルールは先に並んでいるものを優先する", () => {
   const rules = [
     { effect: "攻撃力", attributes: ["火", "水"], score: 4 },

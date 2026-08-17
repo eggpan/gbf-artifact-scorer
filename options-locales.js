@@ -90,6 +90,8 @@
     "採点ルールを全て削除": "Delete All Scoring Rules",
     "固定": "Fixed",
     "全て（一律）": "All (same score)",
+    "個別指定": "Exact",
+    "範囲指定": "Range",
     "追加フォームを閉じる": "Close Add Form",
     "編集フォームを閉じる": "Close Edit Form",
     "閉じる": "Close",
@@ -327,6 +329,10 @@
     if (match) return `Score ${match[1]}`;
     match = value.match(/^ゲーム画面で(\d+)番目を選択中です。$/);
     if (match) return `Item ${match[1]} is selected in the game.`;
+    match = value.match(/^Q(\d+)以上$/);
+    if (match) return `Q${match[1]} or higher`;
+    match = value.match(/^Q(\d+)以下$/);
+    if (match) return `Q${match[1]} or lower`;
     return value;
   }
 

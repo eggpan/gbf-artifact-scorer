@@ -1,6 +1,6 @@
 (function defineScoreConfigEditorCore(globalObject) {
   const {
-    compareQuality,
+    compareQualityCondition,
     compareRulePriority,
     compareScope,
     createEmptyUserConfig,
@@ -16,7 +16,7 @@
         leftEffect.skillGroup - rightEffect.skillGroup ||
         leftEffect.index - rightEffect.index ||
         -compareRulePriority(left, right) ||
-        compareQuality(left.quality, right.quality) ||
+        compareQualityCondition(left, right) ||
         compareScope(left.attributes, right.attributes) ||
         compareScope(left.weaponTypes, right.weaponTypes)
       );
@@ -283,7 +283,7 @@
     return [
       rule.effect,
       rule.comment,
-      rule.quality === undefined ? "" : `Q${rule.quality}`,
+      formatRuleQualityCondition(rule),
       rule.attributes?.join(" "),
       rule.weaponTypes?.join(" "),
       effect ? `グループ${toRomanNumeral(effect.skillGroup)}` : "",
@@ -298,7 +298,8 @@
 
   function formatRuleSummary(rule) {
     const conditions = [];
-    if (rule.quality !== undefined) conditions.push(`Q${rule.quality}`);
+    const qualityCondition = formatRuleQualityCondition(rule);
+    if (qualityCondition) conditions.push(qualityCondition);
     if (rule.attributes?.length) {
       conditions.push(`属性 ${rule.attributes.join("・")}`);
     }
@@ -308,6 +309,13 @@
     return `「${rule.effect}」（${
       conditions.join(" / ") || "指定なし"
     }、スコア ${rule.score}）`;
+  }
+
+  function formatRuleQualityCondition(rule) {
+    if (rule.quality !== undefined) return `Q${rule.quality}`;
+    if (rule.qualityMin !== undefined) return `Q${rule.qualityMin}以上`;
+    if (rule.qualityMax !== undefined) return `Q${rule.qualityMax}以下`;
+    return "";
   }
 
   function formatCombinationSummary(rule) {
@@ -337,6 +345,7 @@
     formatCombinationSummary,
     formatEffectRequirement,
     formatRuleSummary,
+    formatRuleQualityCondition,
     matchesRuleSearch,
     restoreDefaultScoreSettings,
     sortCombinationRules,

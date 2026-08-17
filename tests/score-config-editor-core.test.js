@@ -44,6 +44,7 @@ function rule(effect, score, options = {}) {
     options.weaponTypes,
     score,
     options.comment,
+    options,
   );
 }
 
@@ -234,6 +235,19 @@ Deno.test("採点ルールを限定条件が優先される順に並べる", () 
   deepStrictEqual(config.rules, [scoped, quality, all]);
 });
 
+Deno.test("クオリティの単一指定と範囲を限定順に並べる", () => {
+  const all = rule("攻撃力", 1);
+  const wide = rule("攻撃力", 2, { qualityMin: 2 });
+  const narrow = rule("攻撃力", 3, { qualityMin: 4 });
+  const exact = rule("攻撃力", 4, { quality: 4 });
+  const config = sortConfig(
+    { unmatchedScore: 0, rules: [all, wide, exact, narrow] },
+    EFFECT_BY_NAME,
+  );
+
+  deepStrictEqual(config.rules, [exact, narrow, wide, all]);
+});
+
 Deno.test("同じ限定度の採点ルールを条件値の順に並べる", () => {
   const sword = rule("攻撃力", 1, {
     attributes: ["火"],
@@ -264,6 +278,14 @@ Deno.test("効果・条件・コメント・グループで採点ルールを検
   }
   equal(matchesRuleSearch(target, "HP", EFFECT_BY_NAME), false);
   equal(matchesRuleSearch(target, "", EFFECT_BY_NAME), true);
+  equal(
+    matchesRuleSearch(
+      rule("攻撃力", 2, { qualityMin: 2 }),
+      "q2以上",
+      EFFECT_BY_NAME,
+    ),
+    true,
+  );
 });
 
 Deno.test("組み合わせボーナスを追加、上書き、編集する", () => {
@@ -481,6 +503,14 @@ Deno.test("確認ダイアログ用の要約を整形する", () => {
     "「攻撃力 ＋ HP」（属性 水、加算スコア 3）",
   );
   equal(formatRuleSummary(rule("HP", 1)), "「HP」（指定なし、スコア 1）");
+  equal(
+    formatRuleSummary(rule("攻撃力", 2, { qualityMin: 2 })),
+    "「攻撃力」（Q2以上、スコア 2）",
+  );
+  equal(
+    formatRuleSummary(rule("攻撃力", 3, { qualityMax: 4 })),
+    "「攻撃力」（Q4以下、スコア 3）",
+  );
   equal(
     formatCombinationSummary(
       combination("攻撃力", "HP", 2, { weaponTypes: ["斧"] }),

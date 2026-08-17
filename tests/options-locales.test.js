@@ -14,6 +14,8 @@ Deno.test("英語UIの固定文言と動的な件数を翻訳する", () => {
     ui.translateText("ゲーム画面で2番目を選択中です。"),
     "Item 2 is selected in the game.",
   );
+  equal(ui.translateText("Q2以上"), "Q2 or higher");
+  equal(ui.translateText("Q4以下"), "Q4 or lower");
 });
 
 Deno.test("日本語UIでは元の文言を維持する", () => {
