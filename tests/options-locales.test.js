@@ -28,3 +28,83 @@ Deno.test("日本語UIでは元の文言を維持する", () => {
   equal(ui.translateText("採点ルール"), "採点ルール");
   equal(ui.translateText("20件"), "20件");
 });
+
+Deno.test("英語UIは初期HTMLのplaceholder属性を翻訳する", () => {
+  const globalNames = [
+    "document",
+    "Node",
+    "NodeFilter",
+    "Element",
+    "Document",
+    "MutationObserver",
+  ];
+  const originalDescriptors = new Map(
+    globalNames.map((name) => [
+      name,
+      Object.getOwnPropertyDescriptor(globalThis, name),
+    ]),
+  );
+
+  class FakeElement {
+    constructor(attributes = {}) {
+      this.attributes = new Map(Object.entries(attributes));
+    }
+
+    hasAttribute(name) {
+      return this.attributes.has(name);
+    }
+
+    getAttribute(name) {
+      return this.attributes.get(name);
+    }
+
+    setAttribute(name, value) {
+      this.attributes.set(name, value);
+    }
+  }
+
+  const placeholder = new FakeElement({
+    placeholder: "効果・コメントを検索",
+  });
+
+  class FakeDocument {
+    nodeType = 9;
+    documentElement = { lang: "ja" };
+
+    createTreeWalker() {
+      return { nextNode: () => false };
+    }
+
+    querySelectorAll() {
+      return [placeholder];
+    }
+  }
+
+  class FakeMutationObserver {
+    observe() {}
+  }
+
+  const root = new FakeDocument();
+  Object.assign(globalThis, {
+    document: root,
+    Node: { TEXT_NODE: 3 },
+    NodeFilter: { SHOW_TEXT: 4 },
+    Element: FakeElement,
+    Document: FakeDocument,
+    MutationObserver: FakeMutationObserver,
+  });
+
+  try {
+    createOptionsI18n("en-US").localizeDocument(root);
+    equal(
+      placeholder.getAttribute("placeholder"),
+      "Search effects and comments",
+    );
+    equal(root.documentElement.lang, "en");
+  } finally {
+    for (const [name, descriptor] of originalDescriptors) {
+      if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+      else delete globalThis[name];
+    }
+  }
+});

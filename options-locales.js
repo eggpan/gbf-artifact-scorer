@@ -292,7 +292,7 @@
       if (node instanceof Element) translateAttributes(node);
       const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
       while (walker.nextNode()) translateNode(walker.currentNode);
-      if (node instanceof Element) {
+      if (node instanceof Element || node instanceof Document) {
         node.querySelectorAll("[placeholder], [aria-label], [title], [label]")
           .forEach(
             translateAttributes,
