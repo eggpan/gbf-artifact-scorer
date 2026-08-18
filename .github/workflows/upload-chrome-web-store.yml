@@ -1,0 +1,167 @@
+name: Upload to Chrome Web Store
+
+on:
+  push:
+    tags:
+      - "[0-9]*"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: chrome-web-store-upload
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    name: Validate, package, and upload
+    runs-on: ubuntu-latest
+    environment: chrome-web-store
+
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate the release tag
+        id: version
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          if [[ ! "$TAG_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must use the 1.2.3 format: $TAG_NAME" >&2
+            exit 1
+          fi
+
+          manifest_version="$(jq -r '.version // empty' manifest.json)"
+          if [[ "$TAG_NAME" != "$manifest_version" ]]; then
+            echo "Tag ($TAG_NAME) and manifest version ($manifest_version) do not match." >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; then
+            echo "The tagged commit is not included in main." >&2
+            exit 1
+          fi
+
+          echo "value=$TAG_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Run checks
+        run: |
+          deno fmt --check
+          deno lint
+          deno test
+
+      - name: Create the store package
+        id: package
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        shell: bash
+        run: |
+          package_name="gbf-artifact-scorer-$VERSION.zip"
+          mkdir -p dist/package
+          rsync -a --exclude-from=.cwsignore ./ dist/package/
+          (
+            cd dist/package
+            zip -q -r "../$package_name" .
+          )
+          test -s "dist/$package_name"
+          unzip -t "dist/$package_name"
+          echo "name=$package_name" >> "$GITHUB_OUTPUT"
+          echo "path=dist/$package_name" >> "$GITHUB_OUTPUT"
+
+      - name: Store the generated package in the workflow run
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.package.outputs.path }}
+          archive: false
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Validate Chrome Web Store settings
+        env:
+          WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.CWS_SERVICE_ACCOUNT }}
+          PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+        shell: bash
+        run: |
+          for variable_name in \
+            WORKLOAD_IDENTITY_PROVIDER \
+            SERVICE_ACCOUNT \
+            PUBLISHER_ID \
+            EXTENSION_ID
+          do
+            if [[ -z "${!variable_name}" ]]; then
+              echo "Missing GitHub Environment variable: $variable_name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.CWS_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_lifetime: 600s
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+          create_credentials_file: false
+
+      - name: Upload the package to Chrome Web Store
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+          PACKAGE_PATH: ${{ steps.package.outputs.path }}
+        shell: bash
+        run: |
+          upload_url="https://chromewebstore.googleapis.com/upload/v2/publishers/$PUBLISHER_ID/items/$EXTENSION_ID:upload"
+          status_url="https://chromewebstore.googleapis.com/v2/publishers/$PUBLISHER_ID/items/$EXTENSION_ID:fetchStatus"
+
+          response="$(curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $ACCESS_TOKEN" \
+            --header "Content-Type: application/zip" \
+            --upload-file "$PACKAGE_PATH" \
+            "$upload_url")"
+          echo "$response" | jq .
+          upload_state="$(jq -r '.uploadState // empty' <<< "$response")"
+
+          for _ in {1..30}; do
+            case "$upload_state" in
+              SUCCEEDED|UPLOAD_SUCCEEDED)
+                echo "Chrome Web Store package upload succeeded."
+                exit 0
+                ;;
+              IN_PROGRESS|UPLOAD_IN_PROGRESS)
+                sleep 5
+                response="$(curl --fail-with-body --silent --show-error \
+                  --header "Authorization: Bearer $ACCESS_TOKEN" \
+                  "$status_url")"
+                echo "$response" | jq .
+                upload_state="$(jq -r '.lastAsyncUploadState // empty' <<< "$response")"
+                ;;
+              FAILED|UPLOAD_FAILED)
+                echo "Chrome Web Store package upload failed." >&2
+                exit 1
+                ;;
+              *)
+                echo "Unexpected upload state: ${upload_state:-missing}" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+          echo "Timed out while waiting for Chrome Web Store to process the package." >&2
+          exit 1
