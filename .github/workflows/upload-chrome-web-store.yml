@@ -17,7 +17,6 @@ jobs:
   upload:
     name: Validate, package, and upload
     runs-on: ubuntu-latest
-    environment: chrome-web-store
 
     steps:
       - name: Check out the tagged commit
@@ -102,7 +101,7 @@ jobs:
             EXTENSION_ID
           do
             if [[ -z "${!variable_name}" ]]; then
-              echo "Missing GitHub Environment variable: $variable_name" >&2
+              echo "Missing GitHub Actions variable: $variable_name" >&2
               exit 1
             fi
           done
