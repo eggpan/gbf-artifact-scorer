@@ -24,6 +24,21 @@
         const quality = rule.quality === null || rule.quality === undefined
           ? undefined
           : normalizeQuality(rule.quality);
+        const qualityMin = rule.qualityMin === null ||
+            rule.qualityMin === undefined
+          ? undefined
+          : normalizeQuality(rule.qualityMin);
+        const qualityMax = rule.qualityMax === null ||
+            rule.qualityMax === undefined
+          ? undefined
+          : normalizeQuality(rule.qualityMax);
+        if (
+          [quality, qualityMin, qualityMax].filter((value) =>
+            value !== undefined
+          ).length > 1
+        ) {
+          return;
+        }
         const normalizedAttributes = normalizeRuleScope(
           rule.attributes,
           attributes,
@@ -32,13 +47,16 @@
           rule.weaponTypes,
           weaponTypes,
         );
-        userRules.push({
+        const activeRule = {
           effect,
           quality,
           attributes: normalizedAttributes,
           weaponTypes: normalizedWeaponTypes,
           score,
-        });
+        };
+        if (qualityMin !== undefined) activeRule.qualityMin = qualityMin;
+        if (qualityMax !== undefined) activeRule.qualityMax = qualityMax;
+        userRules.push(activeRule);
       });
     }
 
@@ -206,7 +224,7 @@
 
     rules.forEach((rule) => {
       if (rule.effect !== effect) return;
-      if (rule.quality !== undefined && rule.quality !== quality) return;
+      if (!matchesQualityCondition(rule, quality)) return;
       if (rule.attributes && !rule.attributes.includes(attribute)) return;
       if (rule.weaponTypes && !rule.weaponTypes.includes(weaponType)) return;
 
@@ -216,6 +234,13 @@
     });
 
     return bestMatch?.score;
+  }
+
+  function matchesQualityCondition(rule, quality) {
+    if (rule.quality !== undefined) return rule.quality === quality;
+    if (rule.qualityMin !== undefined) return quality >= rule.qualityMin;
+    if (rule.qualityMax !== undefined) return quality <= rule.qualityMax;
+    return true;
   }
 
   function createTooltipLines(

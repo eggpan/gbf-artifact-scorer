@@ -90,6 +90,8 @@
     "採点ルールを全て削除": "Delete All Scoring Rules",
     "固定": "Fixed",
     "全て（一律）": "All (same score)",
+    "個別指定": "Exact",
+    "範囲指定": "Range",
     "追加フォームを閉じる": "Close Add Form",
     "編集フォームを閉じる": "Close Edit Form",
     "閉じる": "Close",
@@ -290,15 +292,18 @@
       if (node instanceof Element) translateAttributes(node);
       const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
       while (walker.nextNode()) translateNode(walker.currentNode);
-      if (node instanceof Element) {
-        node.querySelectorAll("[placeholder], [aria-label], [title]").forEach(
-          translateAttributes,
-        );
+      if (node instanceof Element || node instanceof Document) {
+        node.querySelectorAll("[placeholder], [aria-label], [title], [label]")
+          .forEach(
+            translateAttributes,
+          );
       }
     }
 
     function translateAttributes(element) {
-      for (const attribute of ["placeholder", "aria-label", "title"]) {
+      for (
+        const attribute of ["placeholder", "aria-label", "title", "label"]
+      ) {
         if (!element.hasAttribute(attribute)) continue;
         const value = element.getAttribute(attribute);
         const translated = translateText(value);
@@ -327,6 +332,10 @@
     if (match) return `Score ${match[1]}`;
     match = value.match(/^ゲーム画面で(\d+)番目を選択中です。$/);
     if (match) return `Item ${match[1]} is selected in the game.`;
+    match = value.match(/^Q(\d+)以上$/);
+    if (match) return `Q${match[1]} or higher`;
+    match = value.match(/^Q(\d+)以下$/);
+    if (match) return `Q${match[1]} or lower`;
     return value;
   }
 

@@ -3,12 +3,14 @@ import "../core/score-config-core.js";
 
 const {
   compareQuality,
+  compareQualityCondition,
   compareRulePriority,
   compareScope,
   createCombinationRule,
   createEmptyUserConfig,
   createRule,
   getCombinationRuleKey,
+  getQualityConditionKey,
   getRuleKey,
   normalizeQuality,
   normalizeRuleScope,
@@ -112,6 +114,51 @@ Deno.test("設定JSONを正規化し、未指定の条件フィールドを省�
       },
     ],
   });
+});
+
+Deno.test("クオリティの以上・以下条件を検証して保持する", () => {
+  const config = validate({
+    unmatchedScore: 0,
+    rules: [
+      { effect: "攻撃力", qualityMin: 2, score: 2 },
+      { effect: "攻撃力", qualityMax: 4, score: 3 },
+    ],
+  });
+
+  deepStrictEqual(config.rules, [
+    { effect: "攻撃力", qualityMin: 2, score: 2 },
+    { effect: "攻撃力", qualityMax: 4, score: 3 },
+  ]);
+});
+
+Deno.test("重複・無効・固定クオリティの範囲条件を拒否する", () => {
+  assertValidationError(
+    {
+      unmatchedScore: 0,
+      rules: [{ effect: "攻撃力", quality: 3, qualityMin: 2, score: 1 }],
+    },
+    /クオリティ条件を複数指定できません/,
+  );
+  for (
+    const rule of [
+      { effect: "攻撃力", qualityMin: 1, score: 1 },
+      { effect: "攻撃力", qualityMin: 5, score: 1 },
+      { effect: "攻撃力", qualityMax: 1, score: 1 },
+      { effect: "攻撃力", qualityMax: 5, score: 1 },
+    ]
+  ) {
+    assertValidationError(
+      { unmatchedScore: 0, rules: [rule] },
+      /単一指定または全てと重複しています/,
+    );
+  }
+  assertValidationError(
+    {
+      unmatchedScore: 0,
+      rules: [{ effect: "ディスペルガード", qualityMin: 1, score: 1 }],
+    },
+    /固定クオリティには範囲を指定できません/,
+  );
 });
 
 Deno.test("旧ゲーム画面設定を除外し、一覧プレビュー設定を保持する", () => {
@@ -479,6 +526,17 @@ Deno.test("設定画面用のルール生成と比較関数を検証する", () 
   equal(compareQuality(undefined, 1), -1);
   equal(compareQuality(1, undefined), 1);
   equal(compareQuality(2, 3), -1);
+  equal(
+    compareQualityCondition(
+      { effect: "攻撃力", qualityMin: 2 },
+      { effect: "攻撃力", qualityMax: 4 },
+    ) !== 0,
+    true,
+  );
+  equal(getQualityConditionKey({ quality: 3 }), "exact:3");
+  equal(getQualityConditionKey({ qualityMin: 2 }), "min:2");
+  equal(getQualityConditionKey({ qualityMax: 4 }), "max:4");
+  equal(getQualityConditionKey({}), "all");
   equal(compareScope(["火"], ["火"]), 0);
   equal(compareScope(["火"], ["水"]) !== 0, true);
 });
@@ -531,4 +589,22 @@ Deno.test("指定項目数が多く、対象範囲が狭いルールを優先す
     true,
   );
   equal(compareRulePriority(defaultRule, { ...defaultRule, score: 9 }), 0);
+});
+
+Deno.test("単一クオリティと狭いクオリティ範囲を優先する", () => {
+  const exact = { effect: "攻撃力", quality: 4, score: 4 };
+  const narrowRange = { effect: "攻撃力", qualityMin: 4, score: 3 };
+  const wideRange = { effect: "攻撃力", qualityMin: 2, score: 2 };
+  const all = { effect: "攻撃力", score: 1 };
+
+  equal(compareRulePriority(exact, narrowRange) > 0, true);
+  equal(compareRulePriority(narrowRange, wideRange) > 0, true);
+  equal(compareRulePriority(wideRange, all) > 0, true);
+  equal(
+    compareRulePriority(
+      { effect: "攻撃力", qualityMin: 2 },
+      { effect: "攻撃力", qualityMax: 4 },
+    ),
+    0,
+  );
 });

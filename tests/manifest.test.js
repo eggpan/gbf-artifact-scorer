@@ -22,7 +22,7 @@ Deno.test("拡張機能名・説明・権限を明示する", () => {
   ok(japaneseMessages.extensionDescription.message.includes("非公式"));
   ok(englishMessages.extensionDescription.message.includes("unofficial"));
   equal(manifest.action.default_title, "__MSG_actionTitle__");
-  equal(manifest.version, "1.0.1");
+  equal(manifest.version, "1.1.0");
   equal(manifest.minimum_chrome_version, "111");
   deepStrictEqual(manifest.permissions, ["storage"]);
 });

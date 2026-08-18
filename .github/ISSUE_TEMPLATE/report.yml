@@ -33,7 +33,7 @@ body:
     attributes:
       label: 利用環境
       description: Chrome、OS、拡張機能のバージョンなどを分かる範囲で記載してください。
-      placeholder: 例：Chrome 140、Windows 11、拡張機能 1.0.1
+      placeholder: 例：Chrome 140、Windows 11、拡張機能 1.1.0
 
   - type: textarea
     id: additional-context

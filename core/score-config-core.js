@@ -78,6 +78,14 @@
           rule?.quality === undefined
         ? undefined
         : Number(rule.quality);
+      const requestedQualityMin = rule?.qualityMin === null ||
+          rule?.qualityMin === undefined
+        ? undefined
+        : Number(rule.qualityMin);
+      const requestedQualityMax = rule?.qualityMax === null ||
+          rule?.qualityMax === undefined
+        ? undefined
+        : Number(rule.qualityMax);
 
       if (!effect) {
         throw new Error(`${index + 1}件目の効果名がマスタにありません。`);
@@ -89,15 +97,15 @@
         if (omitZeroScores) return [];
         throw new Error(`${index + 1}件目のスコアには0を指定できません。`);
       }
-      if (
-        requestedQuality !== undefined &&
-        !effect.qualities.includes(requestedQuality)
-      ) {
-        throw new Error(`${index + 1}件目のクオリティが不正です。`);
-      }
-      const quality = effect.qualities.length === 1
-        ? undefined
-        : requestedQuality;
+      const qualityCondition = validateQualityCondition(
+        {
+          quality: requestedQuality,
+          qualityMin: requestedQualityMin,
+          qualityMax: requestedQualityMax,
+        },
+        effect.qualities,
+        index,
+      );
 
       const normalizedAttributes = validateScopeValues(
         rule?.attributes,
@@ -114,11 +122,12 @@
       const comment = validateComment(rule?.comment, index);
       const normalizedRule = createRule(
         effect.name,
-        quality,
+        qualityCondition.quality,
         normalizedAttributes,
         normalizedWeaponTypes,
         score,
         comment,
+        qualityCondition,
       );
       const key = getRuleKey(normalizedRule);
       if (seenKeys.has(key)) {
@@ -316,6 +325,47 @@
     return comment || undefined;
   }
 
+  function validateQualityCondition(condition, allowedQualities, ruleIndex) {
+    const entries = [
+      ["quality", condition.quality],
+      ["qualityMin", condition.qualityMin],
+      ["qualityMax", condition.qualityMax],
+    ].filter(([, value]) => value !== undefined);
+    if (entries.length > 1) {
+      throw new Error(
+        `${ruleIndex + 1}件目のクオリティ条件を複数指定できません。`,
+      );
+    }
+    if (entries.length === 0) return {};
+
+    const [field, value] = entries[0];
+    if (!Number.isInteger(value) || !allowedQualities.includes(value)) {
+      throw new Error(`${ruleIndex + 1}件目のクオリティが不正です。`);
+    }
+    if (allowedQualities.length === 1) {
+      if (field === "quality") return {};
+      throw new Error(
+        `${ruleIndex + 1}件目の固定クオリティには範囲を指定できません。`,
+      );
+    }
+    if (field === "quality") return { quality: value };
+
+    const matchingQualities = field === "qualityMin"
+      ? allowedQualities.filter((quality) => quality >= value)
+      : allowedQualities.filter((quality) => quality <= value);
+    if (
+      matchingQualities.length < 2 ||
+      matchingQualities.length >= allowedQualities.length
+    ) {
+      throw new Error(
+        `${
+          ruleIndex + 1
+        }件目のクオリティ範囲が単一指定または全てと重複しています。`,
+      );
+    }
+    return { [field]: value };
+  }
+
   function createEmptyUserConfig() {
     return { unmatchedScore: 0, rules: [] };
   }
@@ -327,10 +377,17 @@
     weaponTypes,
     score,
     comment,
+    qualityCondition = {},
   ) {
     const rule = { effect };
     if (comment) rule.comment = comment;
     if (quality !== undefined) rule.quality = quality;
+    if (qualityCondition.qualityMin !== undefined) {
+      rule.qualityMin = qualityCondition.qualityMin;
+    }
+    if (qualityCondition.qualityMax !== undefined) {
+      rule.qualityMax = qualityCondition.qualityMax;
+    }
     if (attributes?.length) rule.attributes = attributes;
     if (weaponTypes?.length) rule.weaponTypes = weaponTypes;
     rule.score = score;
@@ -355,10 +412,17 @@
   function getRuleKey(rule) {
     return [
       rule.effect,
-      rule.quality ?? "all",
+      getQualityConditionKey(rule),
       rule.attributes?.join(",") ?? "all",
       rule.weaponTypes?.join(",") ?? "all",
     ].join("\u0000");
+  }
+
+  function getQualityConditionKey(rule) {
+    if (rule.quality !== undefined) return `exact:${rule.quality}`;
+    if (rule.qualityMin !== undefined) return `min:${rule.qualityMin}`;
+    if (rule.qualityMax !== undefined) return `max:${rule.qualityMax}`;
+    return "all";
   }
 
   function getCombinationRuleKey(rule) {
@@ -382,13 +446,21 @@
   }
 
   function getRuleSpecificity(rule) {
-    const specifiedConditionCount = Number(rule.quality !== undefined) +
+    const qualitySelectionCount = getQualitySelectionCount(rule);
+    const specifiedConditionCount = Number(qualitySelectionCount > 0) +
       Number(Boolean(rule.attributes)) +
       Number(Boolean(rule.weaponTypes));
-    const selectedValueCount = Number(rule.quality !== undefined) +
+    const selectedValueCount = qualitySelectionCount +
       (rule.attributes?.length ?? 0) +
       (rule.weaponTypes?.length ?? 0);
     return [specifiedConditionCount, -selectedValueCount];
+  }
+
+  function getQualitySelectionCount(rule) {
+    if (rule.quality !== undefined) return 1;
+    if (rule.qualityMin !== undefined) return 6 - rule.qualityMin;
+    if (rule.qualityMax !== undefined) return rule.qualityMax;
+    return 0;
   }
 
   function compareSpecificity(left, right) {
@@ -405,6 +477,13 @@
     return left - right;
   }
 
+  function compareQualityCondition(left, right) {
+    return getQualityConditionKey(left).localeCompare(
+      getQualityConditionKey(right),
+      "ja",
+    );
+  }
+
   function compareScope(left, right) {
     return (left?.join(",") ?? "").localeCompare(
       right?.join(",") ?? "",
@@ -414,12 +493,14 @@
 
   globalObject.GbfArtifactScoreConfigCore = Object.freeze({
     compareQuality,
+    compareQualityCondition,
     compareRulePriority,
     compareScope,
     createCombinationRule,
     createEmptyUserConfig,
     createRule,
     getCombinationRuleKey,
+    getQualityConditionKey,
     getRuleKey,
     normalizeQuality,
     normalizeRuleScope,

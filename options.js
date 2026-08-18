@@ -28,6 +28,7 @@ const {
   deleteRule,
   formatCombinationSummary,
   formatEffectRequirement,
+  formatRuleQualityCondition,
   formatRuleSummary,
   matchesRuleSearch,
   restoreDefaultScoreSettings,
@@ -569,11 +570,12 @@ function renderEffectOptions(selectedEffect) {
   }
 }
 
-function renderQualityOptions(selectedQuality) {
+function renderQualityOptions(selectedRule) {
   renderQualitySelect(
     elements.effectSelect,
     elements.qualitySelect,
-    selectedQuality,
+    selectedRule,
+    true,
   );
 }
 
@@ -600,10 +602,15 @@ function renderCombinationQualityOptions(
   qualitySelect,
   selectedQuality,
 ) {
-  renderQualitySelect(effectSelect, qualitySelect, selectedQuality);
+  renderQualitySelect(effectSelect, qualitySelect, selectedQuality, false);
 }
 
-function renderQualitySelect(effectSelect, qualitySelect, selectedQuality) {
+function renderQualitySelect(
+  effectSelect,
+  qualitySelect,
+  selectedCondition,
+  allowRanges,
+) {
   const effect = state.effectByName.get(effectSelect.value);
   qualitySelect.replaceChildren();
 
@@ -619,16 +626,57 @@ function renderQualitySelect(effectSelect, qualitySelect, selectedQuality) {
   }
 
   qualitySelect.append(createOption("", "全て（一律）"));
-  effect.qualities.forEach((quality) => {
-    qualitySelect.append(createOption(String(quality), `Q${quality}`));
-  });
+  if (allowRanges) {
+    const exactGroup = document.createElement("optgroup");
+    exactGroup.label = "個別指定";
+    effect.qualities.forEach((quality) => {
+      exactGroup.append(createOption(`exact:${quality}`, `Q${quality}`));
+    });
+    const rangeGroup = document.createElement("optgroup");
+    rangeGroup.label = "範囲指定";
+    const rangeBoundaries = effect.qualities.slice(1, -1);
+    rangeBoundaries.forEach((quality) => {
+      rangeGroup.append(
+        createOption(`min:${quality}`, `Q${quality}以上`),
+      );
+    });
+    rangeBoundaries.forEach((quality) => {
+      rangeGroup.append(
+        createOption(`max:${quality}`, `Q${quality}以下`),
+      );
+    });
+    qualitySelect.append(exactGroup, rangeGroup);
+  } else {
+    effect.qualities.forEach((quality) => {
+      qualitySelect.append(createOption(String(quality), `Q${quality}`));
+    });
+  }
   qualitySelect.disabled = false;
 
-  if (selectedQuality !== undefined && selectedQuality !== null) {
-    qualitySelect.value = String(selectedQuality);
+  if (allowRanges) {
+    qualitySelect.value = getQualitySelectValue(selectedCondition);
+  } else if (selectedCondition !== undefined && selectedCondition !== null) {
+    qualitySelect.value = String(selectedCondition);
   } else {
     qualitySelect.value = "";
   }
+}
+
+function getQualitySelectValue(rule) {
+  if (rule?.quality !== undefined) return `exact:${rule.quality}`;
+  if (rule?.qualityMin !== undefined) return `min:${rule.qualityMin}`;
+  if (rule?.qualityMax !== undefined) return `max:${rule.qualityMax}`;
+  return "";
+}
+
+function parseQualitySelectValue(value) {
+  if (!value) return {};
+  const [type, rawQuality] = value.split(":");
+  const quality = Number(rawQuality);
+  if (type === "exact") return { quality };
+  if (type === "min") return { qualityMin: quality };
+  if (type === "max") return { qualityMax: quality };
+  return {};
 }
 
 function renderScopeOptions(container, choices, selectedValues) {
@@ -712,11 +760,17 @@ async function handleRuleSubmit(event) {
     return;
   }
 
-  const quality = elements.qualitySelect.value === ""
-    ? undefined
-    : Number(elements.qualitySelect.value);
+  const qualityCondition = parseQualitySelectValue(
+    elements.qualitySelect.value,
+  );
+  const quality = qualityCondition.quality;
 
-  if (quality !== undefined && !effect.qualities.includes(quality)) {
+  const selectedQuality = quality ?? qualityCondition.qualityMin ??
+    qualityCondition.qualityMax;
+  if (
+    selectedQuality !== undefined &&
+    !effect.qualities.includes(selectedQuality)
+  ) {
     showRuleFormError("この効果では選択できないクオリティです。");
     return;
   }
@@ -731,6 +785,7 @@ async function handleRuleSubmit(event) {
     weaponTypes,
     score,
     comment,
+    qualityCondition,
   );
   const editingKey = state.editKey;
   const copySourceKey = state.ruleCopySourceKey;
@@ -860,7 +915,7 @@ function populateRuleForm(rule) {
   const effect = state.effectByName.get(rule.effect);
   elements.groupSelect.value = String(effect.skillGroup);
   renderEffectOptions(rule.effect);
-  renderQualityOptions(rule.quality);
+  renderQualityOptions(rule);
   renderScopeOptions(
     elements.attributeOptions,
     state.attributes,
@@ -1380,6 +1435,7 @@ function matchesLocalizedRuleSearch(rule, searchQuery) {
   if (!query) return true;
   return [
     getEffectLabel(rule.effect),
+    formatLocalizedRuleQualityCondition(rule),
     ...(rule.attributes ?? []).map(getAttributeLabel),
     ...(rule.weaponTypes ?? []).map(getWeaponTypeLabel),
   ].some((value) => value.toLocaleLowerCase(ui.locale).includes(query));
@@ -1844,8 +1900,9 @@ function createConditionsCell(rule) {
   const conditions = document.createElement("div");
   conditions.className = "condition-list";
   const conditionItems = [];
-  if (rule.quality !== undefined) {
-    conditionItems.push(createConditionItem("Q", String(rule.quality)));
+  const qualityCondition = formatLocalizedRuleQualityCondition(rule);
+  if (qualityCondition) {
+    conditionItems.push(createConditionItem("Q", qualityCondition.slice(1)));
   }
   if (rule.attributes?.length) {
     conditionItems.push(
@@ -1911,7 +1968,8 @@ function formatLocalizedEffectRequirement(requirement) {
 function formatLocalizedRuleSummary(rule) {
   if (ui.locale !== "en") return formatRuleSummary(rule);
   const conditions = [];
-  if (rule.quality !== undefined) conditions.push(`Q${rule.quality}`);
+  const qualityCondition = formatLocalizedRuleQualityCondition(rule);
+  if (qualityCondition) conditions.push(qualityCondition);
   if (rule.attributes?.length) {
     conditions.push(
       `Element ${rule.attributes.map(getAttributeLabel).join(" / ")}`,
@@ -1925,6 +1983,14 @@ function formatLocalizedRuleSummary(rule) {
   return `“${getEffectLabel(rule.effect)}” (${
     conditions.join("; ") || "No conditions"
   }, score ${rule.score})`;
+}
+
+function formatLocalizedRuleQualityCondition(rule) {
+  if (ui.locale !== "en") return formatRuleQualityCondition(rule);
+  if (rule.quality !== undefined) return `Q${rule.quality}`;
+  if (rule.qualityMin !== undefined) return `Q${rule.qualityMin} or higher`;
+  if (rule.qualityMax !== undefined) return `Q${rule.qualityMax} or lower`;
+  return "";
 }
 
 function formatLocalizedCombinationSummary(rule) {
