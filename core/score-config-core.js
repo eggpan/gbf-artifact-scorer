@@ -154,6 +154,14 @@
               requirement?.quality === undefined
             ? undefined
             : Number(requirement.quality);
+          const requestedQualityMin = requirement?.qualityMin === null ||
+              requirement?.qualityMin === undefined
+            ? undefined
+            : Number(requirement.qualityMin);
+          const requestedQualityMax = requirement?.qualityMax === null ||
+              requirement?.qualityMax === undefined
+            ? undefined
+            : Number(requirement.qualityMax);
           if (!effect) {
             throw new Error(
               `${index + 1}件目の組み合わせボーナスの効果${
@@ -161,21 +169,18 @@
               }がマスタにありません。`,
             );
           }
-          if (
-            requestedQuality !== undefined &&
-            !effect.qualities.includes(requestedQuality)
-          ) {
-            throw new Error(
-              `${index + 1}件目の組み合わせボーナスの効果${
-                effectIndex + 1
-              }のクオリティが不正です。`,
-            );
-          }
-          const quality = effect.qualities.length === 1
-            ? undefined
-            : requestedQuality;
+          const qualityCondition = validateQualityCondition(
+            {
+              quality: requestedQuality,
+              qualityMin: requestedQualityMin,
+              qualityMax: requestedQualityMax,
+            },
+            effect.qualities,
+            index,
+            `${index + 1}件目の組み合わせボーナスの効果${effectIndex + 1}`,
+          );
           const requirementValue = { effect: effect.name };
-          if (quality !== undefined) requirementValue.quality = quality;
+          Object.assign(requirementValue, qualityCondition);
           return requirementValue;
         });
         if (effects[0].effect === effects[1].effect) {
@@ -325,7 +330,12 @@
     return comment || undefined;
   }
 
-  function validateQualityCondition(condition, allowedQualities, ruleIndex) {
+  function validateQualityCondition(
+    condition,
+    allowedQualities,
+    ruleIndex,
+    conditionPrefix = `${ruleIndex + 1}件目`,
+  ) {
     const entries = [
       ["quality", condition.quality],
       ["qualityMin", condition.qualityMin],
@@ -333,19 +343,19 @@
     ].filter(([, value]) => value !== undefined);
     if (entries.length > 1) {
       throw new Error(
-        `${ruleIndex + 1}件目のクオリティ条件を複数指定できません。`,
+        `${conditionPrefix}のクオリティ条件を複数指定できません。`,
       );
     }
     if (entries.length === 0) return {};
 
     const [field, value] = entries[0];
     if (!Number.isInteger(value) || !allowedQualities.includes(value)) {
-      throw new Error(`${ruleIndex + 1}件目のクオリティが不正です。`);
+      throw new Error(`${conditionPrefix}のクオリティが不正です。`);
     }
     if (allowedQualities.length === 1) {
       if (field === "quality") return {};
       throw new Error(
-        `${ruleIndex + 1}件目の固定クオリティには範囲を指定できません。`,
+        `${conditionPrefix}の固定クオリティには範囲を指定できません。`,
       );
     }
     if (field === "quality") return { quality: value };
@@ -358,9 +368,7 @@
       matchingQualities.length >= allowedQualities.length
     ) {
       throw new Error(
-        `${
-          ruleIndex + 1
-        }件目のクオリティ範囲が単一指定または全てと重複しています。`,
+        `${conditionPrefix}のクオリティ範囲が単一指定または全てと重複しています。`,
       );
     }
     return { [field]: value };
@@ -428,7 +436,7 @@
   function getCombinationRuleKey(rule) {
     const effects = rule.effects
       .map((requirement) =>
-        `${requirement.effect}:${requirement.quality ?? "all"}`
+        `${requirement.effect}:${getQualityConditionKey(requirement)}`
       )
       .sort((left, right) => left.localeCompare(right, "ja"));
     return [

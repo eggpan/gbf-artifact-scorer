@@ -42,7 +42,7 @@ Deno.test("ユーザー設定を採点用の形式へ正規化する", () => {
     combinationRules: [
       {
         effects: [
-          { effect: "攻撃力", quality: "Q3" },
+          { effect: "攻撃力", qualityMin: "Q3" },
           { effect: "HP" },
         ],
         attributes: ["水", "火"],
@@ -65,7 +65,7 @@ Deno.test("ユーザー設定を採点用の形式へ正規化する", () => {
   deepStrictEqual(config.combinationRules, [
     {
       effects: [
-        { effect: "攻撃力", quality: 3 },
+        { effect: "攻撃力", quality: undefined, qualityMin: 3 },
         { effect: "HP", quality: undefined },
       ],
       attributes: ["火", "水"],
@@ -419,6 +419,45 @@ Deno.test("組み合わせの属性・武器種・クオリティ条件を全て
   );
 });
 
+Deno.test("組み合わせのクオリティ以上・以下条件を照合する", () => {
+  const rules = createScoreConfig({
+    unmatchedScore: 0,
+    rules: [],
+    combinationRules: [
+      {
+        effects: [{ effect: "攻撃力", qualityMin: 2 }, { effect: "HP" }],
+        score: 2,
+      },
+      {
+        effects: [{ effect: "攻撃力", qualityMax: 4 }, { effect: "HP" }],
+        score: 3,
+      },
+    ],
+  }).combinationRules;
+
+  equal(
+    findMatchingCombinationBonuses(
+      rules,
+      [{ name: "攻撃力", quality: 4 }, { name: "HP", quality: 5 }],
+    ).length,
+    2,
+  );
+  deepStrictEqual(
+    findMatchingCombinationBonuses(
+      rules,
+      [{ name: "攻撃力", quality: 5 }, { name: "HP", quality: 5 }],
+    ).map((bonus) => bonus.score),
+    [2],
+  );
+  deepStrictEqual(
+    findMatchingCombinationBonuses(
+      rules,
+      [{ name: "攻撃力", quality: 1 }, { name: "HP", quality: 5 }],
+    ).map((bonus) => bonus.score),
+    [3],
+  );
+});
+
 Deno.test("ツールチップは可変クオリティだけ数字を表示する", () => {
   const details = {
     skills: [
@@ -451,6 +490,33 @@ Deno.test("ツールチップは可変クオリティだけ数字を表示する
     "ディスガ",
     "未知 2",
   ]);
+});
+
+Deno.test("組み合わせのクオリティ範囲を内訳へ表示する", () => {
+  const details = {
+    skills: [],
+    combinationBonuses: [{
+      effects: [
+        { shortName: "攻撃", qualityMin: 2, showsQuality: true },
+        { shortName: "HP", qualityMax: 4, showsQuality: true },
+      ],
+      score: 5,
+    }],
+  };
+
+  deepStrictEqual(createTooltipLines(details), [
+    "組合せ 攻撃 2以上＋HP 4以下：+5",
+  ]);
+  deepStrictEqual(
+    createTooltipLines(details, false, {
+      combinationLabel: "Combo",
+      separator: ": ",
+      combinationSeparator: " + ",
+      qualityMinSuffix: " or higher",
+      qualityMaxSuffix: " or lower",
+    }),
+    ["Combo 攻撃 2 or higher + HP 4 or lower: +5"],
+  );
 });
 
 Deno.test("スコアを高・通常・低の3段階へ分類する", () => {

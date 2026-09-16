@@ -21,24 +21,8 @@
         const score = Number(rule.score);
         if (!effect || !Number.isFinite(score) || score === 0) return;
 
-        const quality = rule.quality === null || rule.quality === undefined
-          ? undefined
-          : normalizeQuality(rule.quality);
-        const qualityMin = rule.qualityMin === null ||
-            rule.qualityMin === undefined
-          ? undefined
-          : normalizeQuality(rule.qualityMin);
-        const qualityMax = rule.qualityMax === null ||
-            rule.qualityMax === undefined
-          ? undefined
-          : normalizeQuality(rule.qualityMax);
-        if (
-          [quality, qualityMin, qualityMax].filter((value) =>
-            value !== undefined
-          ).length > 1
-        ) {
-          return;
-        }
+        const qualityCondition = normalizeActiveQualityCondition(rule);
+        if (!qualityCondition) return;
         const normalizedAttributes = normalizeRuleScope(
           rule.attributes,
           attributes,
@@ -49,13 +33,11 @@
         );
         const activeRule = {
           effect,
-          quality,
+          ...qualityCondition,
           attributes: normalizedAttributes,
           weaponTypes: normalizedWeaponTypes,
           score,
         };
-        if (qualityMin !== undefined) activeRule.qualityMin = qualityMin;
-        if (qualityMax !== undefined) activeRule.qualityMax = qualityMax;
         userRules.push(activeRule);
       });
     }
@@ -74,11 +56,9 @@
 
         const effects = rule.effects.flatMap((requirement) => {
           if (typeof requirement?.effect !== "string") return [];
-          const quality = requirement.quality === null ||
-              requirement.quality === undefined
-            ? undefined
-            : normalizeQuality(requirement.quality);
-          return [{ effect: requirement.effect, quality }];
+          const qualityCondition = normalizeActiveQualityCondition(requirement);
+          if (!qualityCondition) return [];
+          return [{ effect: requirement.effect, ...qualityCondition }];
         });
         if (
           effects.length !== 2 ||
@@ -107,6 +87,29 @@
         : 0,
       favoriteBonus: Number.isFinite(userFavoriteBonus) ? userFavoriteBonus : 0,
     };
+  }
+
+  function normalizeActiveQualityCondition(value) {
+    const quality = normalizeOptionalQuality(value?.quality);
+    const qualityMin = normalizeOptionalQuality(value?.qualityMin);
+    const qualityMax = normalizeOptionalQuality(value?.qualityMax);
+    if (
+      [quality, qualityMin, qualityMax].filter((item) => item !== undefined)
+        .length > 1
+    ) {
+      return undefined;
+    }
+
+    const condition = { quality };
+    if (qualityMin !== undefined) condition.qualityMin = qualityMin;
+    if (qualityMax !== undefined) condition.qualityMax = qualityMax;
+    return condition;
+  }
+
+  function normalizeOptionalQuality(value) {
+    return value === null || value === undefined
+      ? undefined
+      : normalizeQuality(value);
   }
 
   function calculateArtifactScoreDetails(
@@ -180,8 +183,7 @@
       const matchesAllEffects = rule.effects.every((requirement) =>
         skills.some((skill) =>
           skill.name === requirement.effect &&
-          (requirement.quality === undefined ||
-            skill.quality === requirement.quality)
+          matchesQualityCondition(requirement, skill.quality)
         )
       );
       if (!matchesAllEffects) return [];
@@ -189,13 +191,22 @@
       return [{
         effects: rule.effects.map((requirement) => {
           const definition = effectDefinitions.get(requirement.effect);
-          return {
+          const effect = {
             name: requirement.effect,
             shortName: definition?.shortName ?? requirement.effect,
             quality: requirement.quality,
-            showsQuality: requirement.quality !== undefined &&
+            showsQuality: (requirement.quality !== undefined ||
+              requirement.qualityMin !== undefined ||
+              requirement.qualityMax !== undefined) &&
               definition?.qualities?.length !== 1,
           };
+          if (requirement.qualityMin !== undefined) {
+            effect.qualityMin = requirement.qualityMin;
+          }
+          if (requirement.qualityMax !== undefined) {
+            effect.qualityMax = requirement.qualityMax;
+          }
+          return effect;
         }),
         score: rule.score,
       }];
@@ -251,6 +262,8 @@
       combinationLabel = "組合せ",
       separator = "：",
       combinationSeparator = "＋",
+      qualityMinSuffix = "以上",
+      qualityMaxSuffix = "以下",
     } = {},
   ) {
     const skillLines = scoreDetails.skills.map((skill) => {
@@ -267,8 +280,12 @@
     const combinationLines = (scoreDetails.combinationBonuses ?? []).map(
       (bonus) => {
         const effects = bonus.effects.map((effect) => {
-          const quality = effect.showsQuality && effect.quality
-            ? ` ${effect.quality}`
+          const quality = effect.showsQuality
+            ? formatCombinationQuality(
+              effect,
+              qualityMinSuffix,
+              qualityMaxSuffix,
+            )
             : "";
           return `${effect.shortName}${quality}`;
         }).join(combinationSeparator);
@@ -296,6 +313,23 @@
 
   function formatSignedScore(score) {
     return score > 0 ? `+${score}` : String(score);
+  }
+
+  function formatCombinationQuality(
+    requirement,
+    qualityMinSuffix,
+    qualityMaxSuffix,
+  ) {
+    if (requirement.quality !== undefined) {
+      return ` ${requirement.quality}`;
+    }
+    if (requirement.qualityMin !== undefined) {
+      return ` ${requirement.qualityMin}${qualityMinSuffix}`;
+    }
+    if (requirement.qualityMax !== undefined) {
+      return ` ${requirement.qualityMax}${qualityMaxSuffix}`;
+    }
+    return "";
   }
 
   function getSkillQuality(artifact, skillInfo, skillNumber) {
