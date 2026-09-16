@@ -575,7 +575,6 @@ function renderQualityOptions(selectedRule) {
     elements.effectSelect,
     elements.qualitySelect,
     selectedRule,
-    true,
   );
 }
 
@@ -600,16 +599,15 @@ function renderCombinationEffectOptions(select, selectedEffect) {
 function renderCombinationQualityOptions(
   effectSelect,
   qualitySelect,
-  selectedQuality,
+  selectedCondition,
 ) {
-  renderQualitySelect(effectSelect, qualitySelect, selectedQuality, false);
+  renderQualitySelect(effectSelect, qualitySelect, selectedCondition);
 }
 
 function renderQualitySelect(
   effectSelect,
   qualitySelect,
   selectedCondition,
-  allowRanges,
 ) {
   const effect = state.effectByName.get(effectSelect.value);
   qualitySelect.replaceChildren();
@@ -626,40 +624,27 @@ function renderQualitySelect(
   }
 
   qualitySelect.append(createOption("", "全て（一律）"));
-  if (allowRanges) {
-    const exactGroup = document.createElement("optgroup");
-    exactGroup.label = "個別指定";
-    effect.qualities.forEach((quality) => {
-      exactGroup.append(createOption(`exact:${quality}`, `Q${quality}`));
-    });
-    const rangeGroup = document.createElement("optgroup");
-    rangeGroup.label = "範囲指定";
-    const rangeBoundaries = effect.qualities.slice(1, -1);
-    rangeBoundaries.forEach((quality) => {
-      rangeGroup.append(
-        createOption(`min:${quality}`, `Q${quality}以上`),
-      );
-    });
-    rangeBoundaries.forEach((quality) => {
-      rangeGroup.append(
-        createOption(`max:${quality}`, `Q${quality}以下`),
-      );
-    });
-    qualitySelect.append(exactGroup, rangeGroup);
-  } else {
-    effect.qualities.forEach((quality) => {
-      qualitySelect.append(createOption(String(quality), `Q${quality}`));
-    });
-  }
+  const exactGroup = document.createElement("optgroup");
+  exactGroup.label = "個別指定";
+  effect.qualities.forEach((quality) => {
+    exactGroup.append(createOption(`exact:${quality}`, `Q${quality}`));
+  });
+  const rangeGroup = document.createElement("optgroup");
+  rangeGroup.label = "範囲指定";
+  const rangeBoundaries = effect.qualities.slice(1, -1);
+  rangeBoundaries.forEach((quality) => {
+    rangeGroup.append(
+      createOption(`min:${quality}`, `Q${quality}以上`),
+    );
+  });
+  rangeBoundaries.forEach((quality) => {
+    rangeGroup.append(
+      createOption(`max:${quality}`, `Q${quality}以下`),
+    );
+  });
+  qualitySelect.append(exactGroup, rangeGroup);
   qualitySelect.disabled = false;
-
-  if (allowRanges) {
-    qualitySelect.value = getQualitySelectValue(selectedCondition);
-  } else if (selectedCondition !== undefined && selectedCondition !== null) {
-    qualitySelect.value = String(selectedCondition);
-  } else {
-    qualitySelect.value = "";
-  }
+  qualitySelect.value = getQualitySelectValue(selectedCondition);
 }
 
 function getQualitySelectValue(rule) {
@@ -945,13 +930,27 @@ async function handleCombinationSubmit(event) {
     return;
   }
 
-  const quality1 = getSelectedQuality(elements.combinationQuality1);
-  const quality2 = getSelectedQuality(elements.combinationQuality2);
-  if (quality1 !== undefined && !effect1.qualities.includes(quality1)) {
+  const qualityCondition1 = parseQualitySelectValue(
+    elements.combinationQuality1.value,
+  );
+  const qualityCondition2 = parseQualitySelectValue(
+    elements.combinationQuality2.value,
+  );
+  const selectedQuality1 = qualityCondition1.quality ??
+    qualityCondition1.qualityMin ?? qualityCondition1.qualityMax;
+  const selectedQuality2 = qualityCondition2.quality ??
+    qualityCondition2.qualityMin ?? qualityCondition2.qualityMax;
+  if (
+    selectedQuality1 !== undefined &&
+    !effect1.qualities.includes(selectedQuality1)
+  ) {
     showCombinationFormError("効果1では選択できないクオリティです。");
     return;
   }
-  if (quality2 !== undefined && !effect2.qualities.includes(quality2)) {
+  if (
+    selectedQuality2 !== undefined &&
+    !effect2.qualities.includes(selectedQuality2)
+  ) {
     showCombinationFormError("効果2では選択できないクオリティです。");
     return;
   }
@@ -967,8 +966,8 @@ async function handleCombinationSubmit(event) {
   }
 
   const effects = [
-    createEffectRequirement(effect1.name, quality1),
-    createEffectRequirement(effect2.name, quality2),
+    createEffectRequirement(effect1.name, qualityCondition1),
+    createEffectRequirement(effect2.name, qualityCondition2),
   ];
   const rule = createCombinationRule(
     effects,
@@ -1125,12 +1124,12 @@ function populateCombinationForm(rule) {
   renderCombinationQualityOptions(
     elements.combinationEffect1,
     elements.combinationQuality1,
-    rule.effects[0].quality,
+    rule.effects[0],
   );
   renderCombinationQualityOptions(
     elements.combinationEffect2,
     elements.combinationQuality2,
-    rule.effects[1].quality,
+    rule.effects[1],
   );
   renderScopeOptions(
     elements.combinationAttributeOptions,
@@ -1146,14 +1145,8 @@ function populateCombinationForm(rule) {
   elements.combinationComment.value = rule.comment ?? "";
 }
 
-function getSelectedQuality(select) {
-  return select.value === "" ? undefined : Number(select.value);
-}
-
-function createEffectRequirement(effect, quality) {
-  const requirement = { effect };
-  if (quality !== undefined) requirement.quality = quality;
-  return requirement;
+function createEffectRequirement(effect, qualityCondition = {}) {
+  return { effect, ...qualityCondition };
 }
 
 async function handleUnmatchedScoreChange() {
@@ -1960,9 +1953,8 @@ function getEffectLabel(effectName) {
 
 function formatLocalizedEffectRequirement(requirement) {
   const name = getEffectLabel(requirement.effect);
-  return requirement.quality === undefined
-    ? name
-    : `${name} Q${requirement.quality}`;
+  const qualityCondition = formatLocalizedRuleQualityCondition(requirement);
+  return qualityCondition ? `${name} ${qualityCondition}` : name;
 }
 
 function formatLocalizedRuleSummary(rule) {

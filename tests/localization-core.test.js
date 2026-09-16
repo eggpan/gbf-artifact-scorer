@@ -92,7 +92,7 @@ Deno.test("英語環境では設定JSONの効果名と対象範囲を英語へ�
       score: 5,
     }],
     combinationRules: [{
-      effects: [{ effect: "HP" }, { effect: "奥義ダメージ", quality: 3 }],
+      effects: [{ effect: "HP" }, { effect: "奥義ダメージ", qualityMax: 4 }],
       attributes: ["闇"],
       score: 2,
     }],
@@ -106,7 +106,7 @@ Deno.test("英語環境では設定JSONの効果名と対象範囲を英語へ�
     score: 5,
   });
   deepStrictEqual(localized.combinationRules[0], {
-    effects: [{ effect: "HP" }, { effect: "C.A. DMG", quality: 3 }],
+    effects: [{ effect: "HP" }, { effect: "C.A. DMG", qualityMax: 4 }],
     attributes: ["Dark"],
     score: 2,
   });
@@ -126,7 +126,10 @@ Deno.test("日本語と英語が混在する設定JSONを内部名へ変換す�
       { effect: "HP", attributes: ["水"], weaponTypes: ["杖"], score: 2 },
     ],
     combinationRules: [{
-      effects: [{ effect: "Skill DMG" }, { effect: "弱体成功率" }],
+      effects: [
+        { effect: "Skill DMG", qualityMin: 2 },
+        { effect: "弱体成功率" },
+      ],
       weaponTypes: ["Gun"],
       score: 3,
     }],
@@ -145,7 +148,10 @@ Deno.test("日本語と英語が混在する設定JSONを内部名へ変換す�
     score: 2,
   });
   deepStrictEqual(canonical.combinationRules[0], {
-    effects: [{ effect: "アビリティダメージ" }, { effect: "弱体成功率" }],
+    effects: [
+      { effect: "アビリティダメージ", qualityMin: 2 },
+      { effect: "弱体成功率" },
+    ],
     weaponTypes: ["銃"],
     score: 3,
   });

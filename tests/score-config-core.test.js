@@ -131,6 +131,46 @@ Deno.test("クオリティの以上・以下条件を検証して保持する", 
   ]);
 });
 
+Deno.test("組み合わせボーナスの各効果で以上・以下条件を保持する", () => {
+  const config = validate({
+    unmatchedScore: 0,
+    rules: [],
+    combinationRules: [
+      {
+        effects: [
+          { effect: "攻撃力", qualityMin: 2 },
+          { effect: "ディスペルガード" },
+        ],
+        score: 2,
+      },
+      {
+        effects: [
+          { effect: "攻撃力", qualityMax: 4 },
+          { effect: "ディスペルガード" },
+        ],
+        score: 3,
+      },
+    ],
+  });
+
+  deepStrictEqual(config.combinationRules, [
+    {
+      effects: [
+        { effect: "攻撃力", qualityMin: 2 },
+        { effect: "ディスペルガード" },
+      ],
+      score: 2,
+    },
+    {
+      effects: [
+        { effect: "攻撃力", qualityMax: 4 },
+        { effect: "ディスペルガード" },
+      ],
+      score: 3,
+    },
+  ]);
+});
+
 Deno.test("重複・無効・固定クオリティの範囲条件を拒否する", () => {
   assertValidationError(
     {
@@ -333,6 +373,45 @@ Deno.test("組み合わせボーナスの効果・クオリティ・スコアを
     {
       ...base,
       combinationRules: [{
+        effects: [
+          { effect: "攻撃力", quality: 3, qualityMin: 2 },
+          { effect: "ディスペルガード" },
+        ],
+        score: 1,
+      }],
+    },
+    /効果1のクオリティ条件を複数指定できません/,
+  );
+  assertValidationError(
+    {
+      ...base,
+      combinationRules: [{
+        effects: [
+          { effect: "攻撃力", qualityMin: 1 },
+          { effect: "ディスペルガード" },
+        ],
+        score: 1,
+      }],
+    },
+    /効果1のクオリティ範囲が単一指定または全てと重複しています/,
+  );
+  assertValidationError(
+    {
+      ...base,
+      combinationRules: [{
+        effects: [
+          { effect: "攻撃力" },
+          { effect: "ディスペルガード", qualityMin: 1 },
+        ],
+        score: 1,
+      }],
+    },
+    /効果2の固定クオリティには範囲を指定できません/,
+  );
+  assertValidationError(
+    {
+      ...base,
+      combinationRules: [{
         effects: [{ effect: "攻撃力" }, { effect: "ディスペルガード" }],
         score: "不正",
       }],
@@ -520,6 +599,26 @@ Deno.test("設定画面用のルール生成と比較関数を検証する", () 
       ...combination,
       effects: [...combination.effects].reverse(),
     }),
+  );
+  equal(
+    getCombinationRuleKey(createCombinationRule(
+      [
+        { effect: "攻撃力", qualityMin: 2 },
+        { effect: "ディスペルガード" },
+      ],
+      undefined,
+      undefined,
+      1,
+    )) === getCombinationRuleKey(createCombinationRule(
+      [
+        { effect: "攻撃力", qualityMax: 4 },
+        { effect: "ディスペルガード" },
+      ],
+      undefined,
+      undefined,
+      1,
+    )),
+    false,
   );
 
   equal(compareQuality(undefined, undefined), 0);

@@ -291,9 +291,10 @@
   }
 
   function formatEffectRequirement(requirement) {
-    return requirement.quality === undefined
-      ? requirement.effect
-      : `${requirement.effect} Q${requirement.quality}`;
+    const qualityCondition = formatRuleQualityCondition(requirement);
+    return qualityCondition
+      ? `${requirement.effect} ${qualityCondition}`
+      : requirement.effect;
   }
 
   function formatRuleSummary(rule) {

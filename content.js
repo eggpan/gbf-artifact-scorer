@@ -176,6 +176,8 @@ function createDisplayItem(artifact, listItem, scoreConfig) {
       combinationLabel: localization?.locale === "en" ? "Combo" : "組合せ",
       separator: localization?.locale === "en" ? ": " : "：",
       combinationSeparator: localization?.locale === "en" ? " + " : "＋",
+      qualityMinSuffix: localization?.locale === "en" ? " or higher" : "以上",
+      qualityMaxSuffix: localization?.locale === "en" ? " or lower" : "以下",
     }),
   };
   if (favorite) displayItem.favorite = true;

@@ -53,10 +53,12 @@ function combination(effect1, effect2, score, options = {}) {
     [
       {
         effect: effect1,
+        ...(options.qualityCondition1 ?? {}),
         ...(options.quality1 && { quality: options.quality1 }),
       },
       {
         effect: effect2,
+        ...(options.qualityCondition2 ?? {}),
         ...(options.quality2 && { quality: options.quality2 }),
       },
     ],
@@ -496,6 +498,14 @@ Deno.test("確認ダイアログ用の要約を整形する", () => {
     "「攻撃力」（Q5 / 属性 火 / 武器種 剣・斧、スコア 10）",
   );
   equal(formatEffectRequirement({ effect: "HP", quality: 2 }), "HP Q2");
+  equal(
+    formatEffectRequirement({ effect: "HP", qualityMin: 2 }),
+    "HP Q2以上",
+  );
+  equal(
+    formatEffectRequirement({ effect: "HP", qualityMax: 4 }),
+    "HP Q4以下",
+  );
 
   const bonus = combination("攻撃力", "HP", 3, { attributes: ["水"] });
   equal(
@@ -520,5 +530,14 @@ Deno.test("確認ダイアログ用の要約を整形する", () => {
   equal(
     formatCombinationSummary(combination("攻撃力", "HP", 2)),
     "「攻撃力 ＋ HP」（指定なし、加算スコア 2）",
+  );
+  equal(
+    formatCombinationSummary(
+      combination("攻撃力", "HP", 2, {
+        qualityCondition1: { qualityMin: 2 },
+        qualityCondition2: { qualityMax: 4 },
+      }),
+    ),
+    "「攻撃力 Q2以上 ＋ HP Q4以下」（指定なし、加算スコア 2）",
   );
 });
